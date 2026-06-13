@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Designer Portfolio</title>
+<meta name="description" content="游戏策划作品集">
+<meta name="keywords" content="游戏策划,系统策划,数值策划,游戏设计">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+    --bg:#090909;
+    --surface:#111111;
+    --surface-2:#161616;
+    --border:#252525;
+    --border-hover:#3a3a3a;
+    --text:#f5f5f5;
+    --text-secondary:#9a9a9a;
+    --accent:#007aff;
+    --radius:20px;
+    --shadow:0 0 0 1px rgba(255,255,255,.03);
+    --transition:.28s ease;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.7;}
+a{text-decoration:none;color:inherit;}
+img{max-width:100%;}
+button{font-family:inherit;}
+.container{width:min(1200px,92%);margin:auto;}
+
+/* BACKGROUND */
+.background-grid{position:fixed;inset:0;z-index:-1;opacity:.25;
+    background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+    background-size:50px 50px;}
+
+/* HEADER */
+.header{position:fixed;top:0;left:0;width:100%;z-index:1000;backdrop-filter:blur(20px);background:rgba(9,9,9,.82);border-bottom:1px solid rgba(255,255,255,.05);}
+.nav-container{height:80px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.5px;}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);}
+.nav{display:flex;gap:36px;}
+.nav a{color:var(--text-secondary);transition:var(--transition);font-size:14px;}
+.nav a:hover{color:var(--text);}
+.mobile-toggle{display:none;background:none;border:none;color:white;font-size:22px;cursor:pointer;}
+
+/* MOBILE MENU */
+.mobile-menu{display:none;position:fixed;top:80px;left:0;width:100%;background:#111;border-bottom:1px solid var(--border);z-index:999;}
+.mobile-menu.active{display:block;}
+.mobile-menu a{display:block;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--text-secondary);}
+.mobile-menu a:hover{color:var(--text);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;padding-top:100px;}
+.hero-container{display:grid;grid-template-columns:1.2fr .8fr;gap:80px;align-items:center;}
+.hero-tag{display:inline-flex;padding:8px 14px;border-radius:999px;background:rgba(0,122,255,.1);border:1px solid rgba(0,122,255,.2);color:var(--accent);font-size:12px;letter-spacing:1px;margin-bottom:24px;}
+.hero h1{font-size:clamp(56px,8vw,92px);line-height:1;margin-bottom:24px;}
+.hero h1 span{display:block;color:var(--text-secondary);font-size:.4em;margin-top:12px;font-weight:500;}
+.hero-description{color:var(--text-secondary);max-width:620px;font-size:18px;margin-bottom:40px;}
+
+/* PROFILE CARD */
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:30px;box-shadow:var(--shadow);}
+.card-top{display:flex;align-items:center;gap:18px;}
+.avatar{width:72px;height:72px;border-radius:18px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;}
+.card-top h3{margin-bottom:4px;}
+.card-top p{color:var(--text-secondary);}
+.card-divider{height:1px;background:var(--border);margin:24px 0;}
+.profile-stats{display:flex;flex-direction:column;gap:18px;}
+.stat{display:flex;justify-content:space-between;}
+.stat span{color:var(--text-secondary);}
+
+/* SECTION */
+.section{padding:120px 0;}
+.section-header{margin-bottom:60px;}
+.section-label{color:var(--accent);letter-spacing:2px;font-size:13px;margin-bottom:10px;}
+.section-header h2{font-size:42px;margin-bottom:16px;}
+.section-header p{color:var(--text-secondary);max-width:700px;}
+
+/* PHILOSOPHY */
+.philosophy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;}
+.philosophy-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;transition:var(--transition);}
+.philosophy-card:hover{border-color:var(--accent);transform:translateY(-4px);}
+.card-icon{font-size:28px;margin-bottom:20px;}
+.philosophy-card h3{margin-bottom:12px;}
+.philosophy-card p{color:var(--text-secondary);}
+
+/* GAME CAROUSEL */
+.carousel-wrapper{position:relative;}
+.carousel{display:flex;gap:24px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:10px;scrollbar-width:none;}
+.carousel::-webkit-scrollbar{display:none;}
+.game-slide{scroll-snap-align:start;min-width:280px;max-width:280px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;transition:var(--transition);display:flex;flex-direction:column;gap:10px;}
+.game-slide:hover{border-color:var(--accent);transform:translateY(-4px);}
+.game-slide h3{font-size:18px;margin-bottom:4px;}
+.game-stat-line{color:var(--accent);font-size:13px;font-weight:500;}
+.game-achievement{color:var(--text-secondary);font-size:13px;line-height:1.6;}
+.carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--accent);font-size:18px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;transition:var(--transition);}
+.carousel-arrow:hover{border-color:var(--accent);background:var(--surface-2);}
+.carousel-arrow.left{left:-22px;}
+.carousel-arrow.right{right:-22px;}
+
+/* DECONSTRUCT CARDS */
+.decon-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;}
+.decon-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;cursor:pointer;transition:var(--transition);display:block;}
+.decon-card:hover{border-color:var(--accent);transform:translateY(-4px);}
+.decon-tag{display:inline-block;padding:6px 12px;border-radius:999px;background:#1b1b1b;color:var(--accent);font-size:12px;margin-bottom:16px;}
+.decon-card h3{line-height:1.5;font-size:18px;margin-bottom:8px;}
+.decon-card p{color:var(--text-secondary);font-size:14px;}
+
+/* SKILLS */
+.skill-group{margin-bottom:40px;}
+.skill-group h3{margin-bottom:20px;font-size:18px;}
+.badge-list{display:flex;flex-wrap:wrap;gap:12px;}
+.badge{padding:10px 20px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:14px;transition:var(--transition);}
+.badge:hover{border-color:var(--accent);}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:40px 0;}
+.footer-content{text-align:center;}
+.footer-content p{color:var(--text-secondary);font-size:14px;}
+
+/* BACK TO TOP */
+#backToTop{position:fixed;bottom:30px;right:30px;width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--accent);font-size:18px;cursor:pointer;z-index:100;opacity:0;visibility:hidden;transition:var(--transition);}
+#backToTop.visible{opacity:1;visibility:visible;}
+#backToTop:hover{border-color:var(--accent);transform:translateY(-2px);}
+
+/* SCROLL ANIMATION */
+.hidden{opacity:0;transform:translateY(30px);transition:.7s ease;}
+.show{opacity:1;transform:translateY(0);}
+
+/* RESPONSIVE */
+@media(max-width:1024px){
+    .hero-container{grid-template-columns:1fr;gap:50px;}
+}
+@media(max-width:768px){
+    .nav{display:none;}
+    .mobile-toggle{display:block;}
+    .hero{min-height:auto;padding-top:140px;padding-bottom:80px;}
+    .section{padding:80px 0;}
+    .section-header h2{font-size:32px;}
+    .carousel-arrow{display:none;}
+    .game-slide{min-width:240px;max-width:240px;}
+}
+</style>
+</head>
+<body>
+
+<div class="background-grid"></div>
+
+<!-- NAVIGATION -->
+<header class="header">
+<div class="container nav-container">
+<a href="#" class="logo"><span class="logo-dot"></span>Portfolio</a>
+<nav class="nav">
+<a href="#about">关于我</a>
+<a href="#experience">游戏经历</a>
+<a href="#deconstruct">游戏拆解</a>
+<a href="#skills">技能工具</a>
+<a href="game.html" style="color:var(--accent);">卡牌Demo</a>
+</nav>
+<button class="mobile-toggle" id="mobileToggle"><i class="fa-solid fa-bars"></i></button>
+</div>
+</header>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+<a href="#about">关于我</a>
+<a href="#experience">游戏经历</a>
+<a href="#deconstruct">游戏拆解</a>
+<a href="#skills">技能工具</a>
+<a href="game.html" style="color:var(--accent);">卡牌Demo</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+<div class="container hero-container">
+<div class="hero-content">
+<div class="hero-tag">GAME DESIGN PORTFOLIO</div>
+<h1>游戏策划<span>Game Designer</span></h1>
+<p class="hero-description">
+专注于系统设计、数值平衡、成长循环与玩家体验分析。
+热衷于通过拆解优秀产品、建立设计模型和数据验证，探索长期留存与用户体验之间的平衡。
+</p>
+</div>
+<div class="hero-card">
+<div class="profile-card">
+<div class="card-top">
+<div class="avatar">GD</div>
+<div><h3>你的名字</h3><p>Game Designer</p></div>
+</div>
+<div class="card-divider"></div>
+<div class="profile-stats">
+<div class="stat"><span>方向</span><strong>系统策划</strong></div>
+<div class="stat"><span>方向</span><strong>数值策划</strong></div>
+<div class="stat"><span>方向</span><strong>玩法策划</strong></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ABOUT -->
+<section id="about" class="section">
+<div class="container">
+<div class="section-header hidden">
+<div class="section-label">ABOUT</div>
+<h2>设计方法论</h2>
+<p>我认为优秀的游戏设计并非功能堆砌，而是围绕玩家体验建立长期有效的反馈循环。</p>
+</div>
+<div class="philosophy-grid">
+<div class="philosophy-card hidden"><div class="card-icon">🎯</div><h3>体验优先</h3><p>机制服务于体验，而非单纯增加复杂度。</p></div>
+<div class="philosophy-card hidden"><div class="card-icon">⚙️</div><h3>系统思维</h3><p>关注成长、战斗、经济与社交之间的联动。</p></div>
+<div class="philosophy-card hidden"><div class="card-icon">📊</div><h3>数据驱动</h3><p>通过验证与迭代，降低设计风险。</p></div>
+<div class="philosophy-card hidden"><div class="card-icon">♾️</div><h3>长期留存</h3><p>兼顾即时爽感与长期目标。</p></div>
+</div>
+</div>
+</section>
+
+<!-- GAMING EXPERIENCE -->
+<section id="experience" class="section">
+<div class="container">
+<div class="section-header hidden">
+<div class="section-label">EXPERIENCE</div>
+<h2>核心游玩履历</h2>
+<p>以下内容后续替换为真实数据。</p>
+</div>
+<div class="carousel-wrapper hidden">
+<button class="carousel-arrow left" id="carouselLeft"><i class="fa-solid fa-chevron-left"></i></button>
+<div class="carousel" id="gameCarousel">
+
+<div class="game-slide">
+<h3>云顶之弈</h3>
+<span class="game-stat-line">1000h+</span>
+<span class="game-achievement">艾欧尼亚 王者</span>
+</div>
+
+<div class="game-slide">
+<h3>Monster Hunter World</h3>
+<span class="game-stat-line">2200h+</span>
+<span class="game-achievement">全成就完成</span>
+</div>
+
+<div class="game-slide">
+<h3>League of Legends</h3>
+<span class="game-stat-line">3000h+</span>
+<span class="game-achievement">高段位玩家</span>
+</div>
+
+<div class="game-slide">
+<h3>Genshin Impact</h3>
+<span class="game-stat-line">1000h+</span>
+<span class="game-achievement">长期玩家</span>
+</div>
+
+<div class="game-slide">
+<h3>黑神话：悟空</h3>
+<span class="game-stat-line">200h+</span>
+<span class="game-achievement">全通关</span>
+</div>
+
+<div class="game-slide">
+<h3>死亡搁浅</h3>
+<span class="game-stat-line">150h+</span>
+<span class="game-achievement">全剧情体验</span>
+</div>
+
+</div>
+<button class="carousel-arrow right" id="carouselRight"><i class="fa-solid fa-chevron-right"></i></button>
+</div>
+</div>
+</section>
+
+<!-- GAME DECONSTRUCT -->
+<section id="deconstruct" class="section">
+<div class="container">
+<div class="section-header hidden">
+<div class="section-label">DECONSTRUCT</div>
+<h2>游戏拆解</h2>
+<p>拆开一个游戏，看它如何运转。</p>
+</div>
+<div class="decon-grid">
+
+<a class="decon-card hidden" href="decon-tft-economy.html">
+<span class="decon-tag">Economy</span>
+<h3>云顶之弈经济系统分析</h3>
+<p>金币利息、连胜连败机制如何驱动决策节奏。</p>
+</a>
+
+<a class="decon-card hidden" href="decon-gacha.html">
+<span class="decon-tag">Monetization</span>
+<h3>抽卡机制拆解</h3>
+<p>概率模型、保底设计与资源消耗循环。</p>
+</a>
+
+<a class="decon-card hidden" href="decon-genshin-progression.html">
+<span class="decon-tag">Progression</span>
+<h3>《原神》长线养成系统拆解</h3>
+<p>从角色到武器，养成路径如何支撑留存。</p>
+</a>
+
+<a class="decon-card hidden" href="decon-mhw-boss.html">
+<span class="decon-tag">Combat Design</span>
+<h3>《怪物猎人》Boss设计中的学习曲线</h3>
+<p>从初见杀到熟练狩猎，渐进式难度如何设计。</p>
+</a>
+
+<a class="decon-card hidden" href="decon-death-stranding.html">
+<span class="decon-tag">Social</span>
+<h3>《死亡搁浅》异步联机机制如何创造情感价值</h3>
+<p>看不见的合作如何让孤独旅途变得温暖。</p>
+</a>
+
+<a class="decon-card hidden" href="decon-wukong.html">
+<span class="decon-tag">Combat Design</span>
+<h3>《黑神话：悟空》战斗系统拆解</h3>
+<p>棍法切换与法术搭配的核心循环。</p>
+</a>
+
+</div>
+</div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills" class="section">
+<div class="container">
+<div class="section-header hidden">
+<div class="section-label">SKILLS</div>
+<h2>技能与工具链</h2>
+<p>以设计能力与工具能力为核心。</p>
+</div>
+<div class="skill-group hidden">
+<h3>设计能力</h3>
+<div class="badge-list">
+<span class="badge">系统设计</span><span class="badge">数值建模</span><span class="badge">关卡设计</span><span class="badge">战斗设计</span><span class="badge">成长系统</span><span class="badge">商业化设计</span><span class="badge">世界观构建</span><span class="badge">竞品分析</span>
+</div>
+</div>
+<div class="skill-group hidden">
+<h3>工具链</h3>
+<div class="badge-list">
+<span class="badge">Excel</span><span class="badge">VBA</span><span class="badge">XMind</span><span class="badge">Visio</span><span class="badge">Figma</span><span class="badge">Unity</span><span class="badge">UE5</span><span class="badge">Git</span>
+</div>
+</div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+<div class="container footer-content">
+<p>© 2026 Game Designer Portfolio</p>
+</div>
+</footer>
+
+<!-- BACK TO TOP -->
+<button id="backToTop">↑</button>
+
+<script>
+// Mobile menu
+const mobileToggle = document.getElementById('mobileToggle');
+const mobileMenu = document.getElementById('mobileMenu');
+mobileToggle.addEventListener('click', () => {
+    mobileMenu.classList.toggle('active');
+    const icon = mobileToggle.querySelector('i');
+    icon.classList.toggle('fa-bars');
+    icon.classList.toggle('fa-xmark');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+        mobileMenu.classList.remove('active');
+        const icon = mobileToggle.querySelector('i');
+        icon.classList.add('fa-bars');
+        icon.classList.remove('fa-xmark');
+    });
+});
+
+// Carousel
+const carousel = document.getElementById('gameCarousel');
+const leftArrow = document.getElementById('carouselLeft');
+const rightArrow = document.getElementById('carouselRight');
+leftArrow.addEventListener('click', () => { carousel.scrollBy({ left: -304, behavior: 'smooth' }); });
+rightArrow.addEventListener('click', () => { carousel.scrollBy({ left: 304, behavior: 'smooth' }); });
+
+// Back to top
+const backToTop = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) backToTop.classList.add('visible');
+    else backToTop.classList.remove('visible');
+});
+backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+// Scroll animation
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('show'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.hidden').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

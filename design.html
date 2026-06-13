@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>游戏策划 — 像素与思考</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #0b0b1e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    padding: 20px 30px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.topbar a {
+    color: #888;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s;
+}
+.topbar a:hover { color: #ffd700; }
+.topbar .site-name {
+    color: #ffd700;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+.topbar .current {
+    color: #b4ff32;
+    font-weight: 600;
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.section-icon { font-size: 48px; margin-bottom: 24px; }
+.section-title { font-size: 28px; color: #fff; font-weight: 700; margin-bottom: 12px; }
+.section-subtitle { font-size: 14px; color: #777; margin-bottom: 40px; letter-spacing: 1px; }
+
+.empty-state {
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid rgba(180,255,50,0.15);
+    border-radius: 16px;
+    padding: 60px 40px;
+    background: rgba(180,255,50,0.04);
+}
+.empty-state p { font-size: 15px; color: #888; line-height: 1.8; }
+.empty-state .hint { color: #555; font-size: 13px; margin-top: 16px; }
+
+.footer { padding: 30px 20px; text-align: center; font-size: 12px; color: #444; }
+.footer a { color: #666; text-decoration: none; }
+.footer a:hover { color: #ffd700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <a href="index.html" class="site-name">像素与思考</a>
+    <a href="experience.html">游戏经历</a>
+    <a href="deconstruct.html">游戏拆解</a>
+    <a href="design.html" class="current">游戏策划</a>
+</div>
+
+<div class="content">
+    <div class="section-icon">&#9999;</div>
+    <h1 class="section-title">游戏策划</h1>
+    <p class="section-subtitle">DESIGN</p>
+
+    <div class="empty-state">
+        <p>如果我来做一款游戏？从灵感的碎片到可落地的框架——核心循环、情感曲线、玩法原型。</p>
+        <p>记录每个可能成真的念头，也记录那些值得记住的失败。</p>
+        <p class="hint">内容正在整理中，敬请期待。</p>
+    </div>
+</div>
+
+<footer class="footer">
+    <p><a href="index.html">像素与思考</a> &middot; 游戏随笔</p>
+</footer>
+
+</body>
+</html>
