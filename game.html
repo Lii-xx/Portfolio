@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡牌Roguelike - Game Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+    --bg:#0a0a0a;--surface:rgba(17,17,17,.88);--surface-2:rgba(26,26,26,.88);--border:rgba(255,255,255,.08);
+    --text:#f5f5f5;--text-sec:#888;--accent:#007aff;
+    --atk:#e74c3c;--def:#3498db;--spc:#ecf0f1;--aoe:#f39c12;
+    --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;color:var(--text);overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none;}
+a{color:var(--accent);text-decoration:none;}
+
+/* ===== LAYOUT ===== */
+.game-bg{position:fixed;inset:0;z-index:-1;background:url('bg.png') center/cover no-repeat;}
+.game-bg::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.55);}
+
+#titleScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:24px;position:relative;z-index:1;}
+#titleScreen h1{font-size:48px;letter-spacing:-1px;text-shadow:0 2px 20px rgba(0,0,0,.8);}
+#titleScreen h1 span{color:var(--accent);}
+#titleScreen .sub{color:var(--text-sec);font-size:14px;max-width:420px;text-align:center;line-height:1.8;text-shadow:0 1px 8px rgba(0,0,0,.9);}
+
+.btn{padding:14px 36px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:15px;cursor:pointer;transition:.2s;backdrop-filter:blur(8px);}
+.btn:hover{border-color:var(--accent);background:var(--surface-2);}
+.btn-accent{background:rgba(0,122,255,.85);border-color:var(--accent);color:#fff;}
+.btn-accent:hover{background:rgba(0,102,221,.9);}
+.btn-sm{padding:8px 16px;font-size:12px;}
+.high-score{color:var(--text-sec);font-size:13px;margin-top:8px;text-shadow:0 1px 6px rgba(0,0,0,.8);}
+.back-link{position:fixed;top:20px;left:24px;font-size:13px;color:var(--text-sec);z-index:100;text-shadow:0 1px 4px rgba(0,0,0,.8);}
+.back-link:hover{color:var(--accent);}
+
+/* ===== BATTLE ===== */
+#battleScreen{display:none;height:100vh;flex-direction:column;position:relative;z-index:1;}
+#battleScreen.active{display:flex;}
+
+.top-bar{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.7);backdrop-filter:blur(12px);flex-shrink:0;flex-wrap:wrap;}
+.stat-group{display:flex;align-items:center;gap:5px;font-size:13px;}
+.stat-label{color:var(--text-sec);font-size:11px;}
+.stat-val{font-weight:600;}
+.hp-bar-wrap{width:120px;height:7px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;}
+.hp-bar{height:100%;background:var(--atk);border-radius:4px;transition:width .3s;}
+.debuff-tag{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;}
+.debuff-no-atk{background:rgba(231,76,60,.2);color:var(--atk);}
+.debuff-no-def{background:rgba(52,152,219,.2);color:var(--def);}
+.stage-info{margin-left:auto;color:var(--text-sec);font-size:12px;}
+.buff-tag{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(243,156,18,.2);color:var(--aoe);}
+
+/* Monster area */
+.monster-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative;padding:10px;overflow:hidden;}
+.monsters-row{display:flex;gap:20px;justify-content:center;align-items:flex-end;flex-wrap:wrap;}
+.monster-slot{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;border-radius:14px;border:2px solid transparent;transition:border-color .15s,background .15s;min-width:120px;position:relative;}
+.intent-preview-btn{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);color:var(--text-sec);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;padding:0;line-height:1;}
+.intent-preview-btn:hover{border-color:var(--accent);color:var(--accent);}
+.intent-cycle{position:absolute;top:28px;right:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:11px;z-index:10;white-space:nowrap;line-height:1.8;}
+.intent-cycle .ic-item{display:flex;align-items:center;gap:4px;}
+.intent-cycle .ic-current{color:var(--accent);font-weight:600;}
+.monster-slot.drop-hover{border-color:var(--accent);background:rgba(0,122,255,.06);}
+.monster-slot.selected-target{border-color:var(--atk);background:rgba(231,76,60,.08);}
+.monster-slot.dead{opacity:.25;pointer-events:none;}
+.monster-img{width:160px;height:100px;overflow:hidden;background-image:url('monsters.png');background-size:500% 200%;background-repeat:no-repeat;transition:transform .12s ease-out;image-rendering:auto;}
+.monster-img.hit-anim{transform:translateY(14px);}
+/* sprite位置：5列2行，spriteIdx 0-9 */
+.sprite-0{background-position:0% -22%;}      /* 哥布林 */
+.sprite-1{background-position:25% -22%;}     /* 骷髅战士 */
+.sprite-2{background-position:48% -22%;}     /* 盗贼刺客 */
+.sprite-3{background-position:73% -22%;}     /* 狼人 */
+.sprite-4{background-position:100% -22%;}    /* 黑暗法师 */
+.sprite-5{background-position:0% 78%;}    /* 兽人战士 */
+.sprite-6{background-position:25% 78%;}   /* 冰霜巨人 */
+.sprite-7{background-position:48% 78%;}   /* 烈焰术士 */
+.sprite-8{background-position:73% 78%;}   /* 暗影巨龙 */
+.sprite-9{background-position:100% 78%;}  /* 深渊领主 */
+.monster-name{font-size:14px;font-weight:700;text-shadow:0 2px 10px rgba(0,0,0,.8);}
+.monster-hp-wrap{display:flex;align-items:center;gap:5px;}
+.monster-hp-bar{width:90px;height:7px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;}
+.monster-hp-fill{height:100%;background:var(--atk);border-radius:4px;transition:width .3s;}
+.monster-hp-text{font-size:11px;color:var(--text-sec);min-width:45px;text-shadow:0 1px 4px rgba(0,0,0,.8);}
+.monster-block{font-size:11px;color:var(--def);}
+.monster-intent{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:5px;background:var(--surface);border:1px solid var(--border);font-size:11px;backdrop-filter:blur(6px);}
+.intent-atk{color:var(--atk);}.intent-def{color:var(--def);}.intent-debuff{color:var(--aoe);}
+.boss-tag{padding:2px 7px;border-radius:4px;background:rgba(192,57,43,.2);color:var(--atk);font-size:9px;font-weight:600;}
+.group-tag{padding:2px 7px;border-radius:4px;background:rgba(39,174,96,.2);color:#27ae60;font-size:9px;font-weight:600;}
+
+/* Damage popup */
+.dmg-popup{position:absolute;font-size:18px;font-weight:800;pointer-events:none;animation:dmgFloat .7s ease-out forwards;z-index:20;text-shadow:0 2px 8px rgba(0,0,0,.9);}
+.dmg-popup.dmg-red{color:var(--atk);}
+.dmg-popup.dmg-green{color:#2ecc71;}
+@keyframes dmgFloat{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-35px);}}
+
+/* Damage preview on monster */
+.dmg-preview{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:15px;font-weight:800;color:var(--atk);text-shadow:0 1px 6px rgba(0,0,0,.9);z-index:5;white-space:nowrap;}
+.dmg-preview.aoe-preview{color:var(--aoe);font-size:12px;}
+.dmg-preview.kill-preview{color:var(--aoe);}
+
+/* Card area */
+.card-area{flex-shrink:0;border-top:1px solid var(--border);background:rgba(0,0,0,.75);backdrop-filter:blur(12px);padding:10px 14px 14px;}
+.card-hand{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:#333 transparent;}
+.card-hand::-webkit-scrollbar{height:3px;}
+.card-hand::-webkit-scrollbar-thumb{background:#333;border-radius:2px;}
+.card{min-width:100px;max-width:100px;border-radius:10px;border:2px solid var(--border);background:var(--surface);padding:8px 7px;cursor:grab;transition:transform .12s,border-color .12s,box-shadow .12s;display:flex;flex-direction:column;gap:3px;position:relative;flex-shrink:0;backdrop-filter:blur(6px);}
+.card:hover:not(.disabled){transform:translateY(-5px);border-color:var(--accent);}
+.card.selected{border-color:var(--accent);box-shadow:0 0 14px rgba(0,122,255,.35);transform:translateY(-7px);}
+.card.disabled{opacity:.3;cursor:not-allowed;}
+.card-type{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
+.type-attack{color:var(--atk);}.type-defense,.type-utility{color:var(--def);}.type-power{color:#e6b800;}.type-special{color:var(--spc);}
+.card-name{font-size:12px;font-weight:600;line-height:1.3;}
+.card-desc{font-size:9px;color:var(--text-sec);line-height:1.4;}
+.card-uses{font-size:9px;color:var(--text-sec);margin-top:auto;}
+.card-uses-bar{height:2px;background:rgba(255,255,255,.1);border-radius:1px;margin-top:2px;overflow:hidden;}
+.card-uses-fill{height:100%;border-radius:1px;}
+.aoe-badge{position:absolute;top:-5px;right:-5px;padding:1px 5px;border-radius:3px;background:var(--aoe);color:#000;font-size:8px;font-weight:700;}
+
+.action-bar{display:flex;gap:8px;margin-top:8px;justify-content:center;flex-wrap:wrap;align-items:center;}
+.turn-hint{text-align:center;font-size:12px;color:var(--text-sec);margin-top:4px;}
+.sacrifice-hint{text-align:center;font-size:12px;color:var(--aoe);margin-top:4px;}
+
+/* Drag ghost */
+#dragGhost{position:fixed;pointer-events:none;z-index:9999;opacity:.8;transform:rotate(-3deg) scale(1.05);display:none;}
+#dragGhost .card{cursor:grabbing;}
+
+/* ===== CAMPFIRE ===== */
+.campfire-screen{display:none;position:fixed;inset:0;z-index:400;align-items:center;justify-content:center;flex-direction:column;gap:20px;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);}
+.campfire-screen.active{display:flex;}
+.campfire-screen h1{font-size:32px;}
+.campfire-screen .camp-sub{color:var(--text-sec);font-size:14px;}
+.campfire-choices{display:flex;gap:16px;margin-top:10px;}
+.campfire-choice{padding:20px 28px;border-radius:14px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:.2s;text-align:center;min-width:160px;backdrop-filter:blur(8px);}
+.campfire-choice:hover{border-color:var(--aoe);transform:translateY(-3px);}
+.campfire-choice .cf-icon{font-size:28px;margin-bottom:6px;}
+.campfire-choice .cf-name{font-size:15px;font-weight:700;margin-bottom:4px;}
+.campfire-choice .cf-desc{font-size:12px;color:var(--text-sec);}
+
+/* ===== MODAL ===== */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.active{display:flex;}
+.modal{background:rgba(17,17,17,.95);border:1px solid var(--border);border-radius:14px;padding:28px;max-width:560px;width:90%;max-height:90vh;overflow-y:auto;backdrop-filter:blur(12px);}
+.modal h2{font-size:20px;margin-bottom:6px;}
+.modal .modal-sub{color:var(--text-sec);font-size:12px;margin-bottom:20px;}
+.reward-cards{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:20px;}
+.reward-card{min-width:120px;max-width:150px;flex:1;border-radius:10px;border:2px solid var(--border);background:var(--surface-2);padding:14px 10px;cursor:pointer;transition:.15s;text-align:center;}
+.reward-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+.reward-card .rc-type{font-size:10px;font-weight:600;margin-bottom:4px;}
+.reward-card .rc-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.reward-card .rc-desc{font-size:11px;color:var(--text-sec);line-height:1.4;margin-bottom:6px;}
+.reward-card .rc-uses{font-size:10px;color:var(--text-sec);}
+.delayed-rewards{display:flex;gap:10px;justify-content:center;padding-top:14px;border-top:1px solid var(--border);}
+.delayed-btn{padding:10px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;transition:.15s;text-align:center;min-width:130px;}
+.delayed-btn:hover{border-color:var(--aoe);transform:translateY(-2px);}
+.delayed-btn .dl-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+.delayed-btn .dl-desc{font-size:10px;color:var(--text-sec);}
+
+.end-screen{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:18px;backdrop-filter:blur(8px);}
+.end-screen.active{display:flex;}
+.end-screen h1{font-size:38px;}
+.end-screen p{color:var(--text-sec);font-size:15px;}
+
+.help-content{font-size:12px;line-height:1.8;color:var(--text-sec);}
+.help-content h3{color:var(--text);font-size:14px;margin:10px 0 4px;}
+.help-content strong{color:var(--text);}
+</style>
+</head>
+<body>
+<div class="game-bg"></div>
+
+<div id="titleScreen">
+    <a href="index.html" class="back-link">← 返回首页</a>
+    <h1>卡牌<span>Roguelike</span></h1>
+    <p class="sub">第一人称卡牌战斗 · 拖动卡牌到怪物身上出牌<br>每回合一张牌，每三关遭遇群怪</p>
+    <button class="btn btn-accent" onclick="Game.start()">开始游戏</button>
+    <div class="high-score" id="highScoreText"></div>
+    <button class="btn btn-sm" onclick="UI.showHelp()">玩法说明</button>
+</div>
+
+<div id="battleScreen">
+    <div class="top-bar" id="topBar"></div>
+    <div class="monster-area" id="monsterArea"></div>
+    <div class="card-area">
+        <div class="card-hand" id="cardHand"></div>
+        <div class="action-bar" id="actionBar"></div>
+        <div class="turn-hint" id="turnHint"></div>
+    </div>
+</div>
+
+<div id="dragGhost"></div>
+
+<div class="campfire-screen" id="campfireScreen">
+    <h1>🔥 火堆</h1>
+    <p class="camp-sub">选择一项增益</p>
+    <div class="campfire-choices">
+        <div class="campfire-choice" onclick="UI.campfireChoice('heal')"><div class="cf-icon">❤️</div><div class="cf-name">恢复 20 生命</div><div class="cf-desc">立即回复20HP</div></div>
+        <div class="campfire-choice" onclick="UI.campfireChoice('str')"><div class="cf-icon">💪</div><div class="cf-name">力量加持</div><div class="cf-desc">接下来3场战斗+5力量</div></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="rewardModal">
+    <div class="modal">
+        <h2 id="rewardTitle"></h2>
+        <p class="modal-sub" id="rewardSub"></p>
+        <div class="reward-cards" id="rewardCards"></div>
+        <div class="delayed-rewards" id="delayedRewards"></div>
+    </div>
+</div>
+
+<div class="end-screen" id="gameOverScreen"><h1 style="color:var(--atk)">战败</h1><p id="gameOverText"></p><button class="btn btn-accent" onclick="Game.start()">重新挑战</button><button class="btn" onclick="UI.toTitle()">返回标题</button></div>
+<div class="end-screen" id="victoryScreen"><h1 style="color:var(--aoe)">通关</h1><p id="victoryText"></p><button class="btn btn-accent" onclick="Game.start()">再来一次</button><button class="btn" onclick="UI.toTitle()">返回标题</button></div>
+
+<div class="modal-overlay" id="helpModal" onclick="if(event.target===this)this.classList.remove('active')">
+    <div class="modal">
+        <h2>玩法说明</h2>
+        <div class="help-content">
+            <h3>基础规则</h3>每回合<strong>拖动一张牌</strong>到怪物身上出牌，确认后自动结束回合。
+            <h3>卡牌类型</h3><strong style="color:var(--atk)">攻击</strong> — 造成伤害（含AOE、吸血等）<br><strong style="color:var(--def)">防御</strong> — 获得格挡<br><strong style="color:var(--spc)">特殊</strong> — 空白牌、秒杀牌
+            <h3>群怪</h3>每第3场战斗为群怪，AOE对全体生效，秒杀牌只杀一只。
+            <h3>出牌</h3>拖动卡牌到怪物 → 显示预览伤害 → 点击确认 → 自动结束回合<br>重新拖动另一张牌取消上次选择
+            <h3>火堆</h3>每3层后出现：恢复20HP / 3场战斗+5力量
+            <h3>献祭</h3>选2张剩余次数≥3的牌献祭，3选1新牌
+            <h3>特殊牌</h3><strong>空白牌</strong> — 2张兑换2次卡牌奖励<br><strong>秒杀牌</strong> — 扣15HP，击杀一只非Boss
+        </div>
+        <div style="text-align:center;margin-top:16px;"><button class="btn btn-sm" onclick="document.getElementById('helpModal').classList.remove('active')">关闭</button></div>
+    </div>
+</div>
+
+<script>
+/* ================================================================
+   DATA LAYER — 只需修改这里就能扩展游戏
+   ================================================================ */
+
+// 卡牌定义：添加新卡牌只需在这里加一条
+const CARD_DEFS = {
+    strike:      { name:'打击',     type:'attack',  damage:12, block:0,  maxUses:5, aoe:false, desc:'造成12点伤害',              special:null },
+    defend:      { name:'防御',     type:'utility', damage:0,  block:10, maxUses:5, aoe:false, desc:'获得10点格挡',              special:null },
+    heavy_strike:{ name:'重击',     type:'attack',  damage:20, block:0,  maxUses:4, aoe:false, desc:'造成20点伤害',              special:null },
+    cleave:      { name:'顺劈斩',   type:'attack',  damage:16, block:0,  maxUses:4, aoe:false, desc:'造成16点伤害',              special:null },
+    iron_wall:   { name:'铁壁斩',   type:'attack',  damage:6,  block:10, maxUses:4, aoe:true,  desc:'对全体造成6伤害，获得10格挡', special:null },
+    dual:        { name:'攻防兼备', type:'attack',  damage:8,  block:8,  maxUses:4, aoe:false, desc:'造成8伤害，获得8格挡',      special:null },
+    war_cry:     { name:'战意',     type:'attack',  damage:8,  block:0,  maxUses:4, aoe:false, desc:'造成8伤害，本场战斗+4力量', special:'strength' },
+    vampiric:    { name:'吸血斩',   type:'attack',  damage:10, block:0,  maxUses:4, aoe:false, desc:'造成10伤害，回复3生命',     special:'lifesteal' },
+    combo_slash: { name:'连劈',     type:'attack',  damage:5,  block:0,  maxUses:5, aoe:false, desc:'造成5伤害两次',             special:'double_hit' },
+    replay:      { name:'重放',     type:'utility', damage:0,  block:0,  maxUses:5, aoe:false, desc:'下回合可多出1张牌(最多5张)', special:'replay' },
+    iron_shield: { name:'铁壁',     type:'utility', damage:0,  block:15, maxUses:5, aoe:false, desc:'获得15点格挡',              special:null },
+    eternal_str: { name:'永恒强化', type:'power',   damage:0,  block:0,  maxUses:1, aoe:false, desc:'每回合结束永久+1力量',      special:'eternal_strength' },
+    blank:       { name:'空白牌',   type:'special', damage:0,  block:0,  maxUses:0, aoe:false, desc:'每2张兑换2次卡牌奖励',      special:'blank' },
+    instant_kill:{ name:'秒杀牌',   type:'special', damage:0,  block:0,  maxUses:1, aoe:false, desc:'扣15HP，击杀一只非Boss',    special:'instant_kill' },
+};
+
+// 奖励池：只需列出卡牌key，概率自动计算
+// 特殊牌(blank/instant_kill)固定各10%，其余均分80%
+const REWARD_SPECIALS = ['blank', 'instant_kill']; // 特殊牌，各10%概率
+const REWARD_NORMALS = ['cleave', 'iron_wall', 'dual', 'war_cry', 'vampiric', 'combo_slash', 'replay', 'iron_shield', 'eternal_str']; // 普通牌，均分80%
+
+// 怪物定义：添加新怪物只需在这里加一条
+// spriteIdx: 怪物精灵图在monsters.png中的位置(0-9，左到右，上到下)
+// intents: type='attack'|'defend'|'debuff', value=数值, debuff='no_attack'|'no_defense'
+const MONSTER_DEFS = {
+    goblin:       { name:'哥布林',     hp:22, isBoss:false, spriteIdx:0,
+                    intents:[{type:'attack',value:5,debuff:null},{type:'attack',value:6,debuff:null},{type:'debuff',value:0,debuff:'no_defense'}] },
+    skeleton:     { name:'骷髅战士',   hp:35, isBoss:false, spriteIdx:1,
+                    intents:[{type:'attack',value:7,debuff:null},{type:'defend',value:6,debuff:null},{type:'attack',value:9,debuff:null}] },
+    rogue:        { name:'盗贼刺客',   hp:28, isBoss:false, spriteIdx:2,
+                    intents:[{type:'attack',value:8,debuff:null},{type:'debuff',value:0,debuff:'no_attack'},{type:'attack',value:10,debuff:null}] },
+    werewolf:     { name:'狼人',       hp:45, isBoss:false, spriteIdx:3,
+                    intents:[{type:'attack',value:9,debuff:null},{type:'attack',value:11,debuff:null},{type:'attack',value:13,debuff:null}] },
+    dark_mage:    { name:'黑暗法师',   hp:32, isBoss:false, spriteIdx:4,
+                    intents:[{type:'debuff',value:0,debuff:'no_defense'},{type:'attack',value:9,debuff:null},{type:'debuff',value:0,debuff:'no_attack'}] },
+    orc:          { name:'兽人战士',   hp:55, isBoss:false, spriteIdx:5,
+                    intents:[{type:'defend',value:10,debuff:null},{type:'attack',value:11,debuff:null},{type:'attack',value:13,debuff:null}] },
+    frost_giant:  { name:'冰霜巨人',   hp:70, isBoss:false, spriteIdx:6,
+                    intents:[{type:'defend',value:14,debuff:null},{type:'attack',value:15,debuff:null},{type:'debuff',value:0,debuff:'no_attack'}] },
+    flame_warlock:{ name:'烈焰术士',   hp:40, isBoss:false, spriteIdx:7,
+                    intents:[{type:'attack',value:9,debuff:null},{type:'attack',value:10,debuff:null},{type:'debuff',value:0,debuff:'no_defense'}] },
+    shadow_dragon: { name:'暗影巨龙',  hp:80, isBoss:true,  spriteIdx:8,
+                    intents:[{type:'attack',value:12,debuff:null},{type:'defend',value:10,debuff:null},{type:'attack',value:15,debuff:null},{type:'debuff',value:0,debuff:'no_attack'},{type:'attack',value:18,debuff:null}] },
+    abyss_lord:   { name:'深渊领主',   hp:100,isBoss:true,  spriteIdx:9,
+                    intents:[{type:'attack',value:10,debuff:null},{type:'debuff',value:0,debuff:'no_defense'},{type:'attack',value:14,debuff:null},{type:'debuff',value:0,debuff:'no_attack'},{type:'defend',value:12,debuff:null},{type:'attack',value:20,debuff:null}] },
+};
+
+// 关卡编排：每场战斗由哪些怪物组成
+const ENCOUNTER_MAP = {
+    0: { defKey:'goblin' },                          // 第1场：哥布林
+    1: { defKey:'skeleton' },                       // 第2场：骷髅战士
+    2: [{ defKey:'goblin', count:3 }],               // 第3场：群怪(3哥布林)
+    3: { defKey:'rogue' },                           // 第4场：盗贼刺客
+    4: { defKey:'werewolf' },                        // 第5场：狼人
+    5: [{ defKey:'goblin', count:2 }, { defKey:'dark_mage', count:1 }], // 第6场：群怪
+    6: { defKey:'orc' },                             // 第7场：兽人战士
+    7: { defKey:'dark_mage' },                       // 第8场：黑暗法师
+    8: { defKey:'frost_giant' },                     // 第9场：冰霜巨人
+    9: [{ defKey:'flame_warlock', count:1 }, { defKey:'orc', count:1 }], // 第10场：烈焰术士+兽人
+    10: { defKey:'shadow_dragon' },                  // 第11场：Boss暗影巨龙
+    11: [{ defKey:'frost_giant', count:1 }, { defKey:'flame_warlock', count:1 }], // 第12场：冰霜巨人+烈焰术士
+};
+
+// 火堆出现在第5场和第10场战斗后
+const CAMPFIRE_AFTER_COMBATS = [4, 9];
+
+// 初始卡组
+const STARTING_DECK = ['strike','strike','strike','defend','defend','heavy_strike'];
+
+// 延迟奖励定义
+const DELAYED_REWARDS = [
+    { id:'hp',  icon:'❤️', name:'+5 最大生命', desc:'提升生命上限', apply:(p)=>{ p.maxHp+=5; p.hp+=5; } },
+    { id:'str', icon:'💪', name:'+2 永久力量', desc:'所有攻击伤害+2', apply:(p)=>{ p.permStrength+=2; } },
+];
+
+// 火堆选项定义
+const CAMPFIRE_CHOICES = [
+    { id:'heal', icon:'❤️', name:'恢复 20 生命', desc:'立即回复20HP', apply:(p)=>{ p.hp=Math.min(p.maxHp,p.hp+20); } },
+    { id:'str',  icon:'💪', name:'力量加持',     desc:'接下来3场战斗+5力量', apply:(p)=>{ p.campfireStrBuff=3; } },
+];
+
+
+/* ================================================================
+   GAME ENGINE — 游戏逻辑，不涉及DOM
+   ================================================================ */
+
+let _cardId = 0;
+function makeCard(defKey) {
+    const d = CARD_DEFS[defKey];
+    return { id:++_cardId, defKey, name:d.name, type:d.type, damage:d.damage, block:d.block, maxUses:d.maxUses, usesLeft:d.maxUses, desc:d.desc, special:d.special, aoe:d.aoe };
+}
+
+function makeMonster(defKey) {
+    const d = MONSTER_DEFS[defKey];
+    return { defKey, name:d.name, hp:d.hp, currentHp:d.hp, isBoss:d.isBoss, spriteIdx:d.spriteIdx, intents:d.intents, intentIdx:0, block:0 };
+}
+
+const Game = {
+    state: null,
+
+    init() {
+        _cardId = 0;
+        this.state = {
+            player: { hp:60, maxHp:60, block:0, permStrength:0, tempStrength:0, campfireStrBuff:0, debuffs:[], deck:[], playedCount:0, extraPlays:0, nextExtraPlays:0, powers:[] },
+            floor: 1,
+            combatCount: 0,   // 已完成的战斗数
+            monsters: [],
+            isGroup: false,
+            phase: 'battle',  // battle | sacrifice | campfire | reward
+            selection: null,  // {cardId, targetIdx}
+            sacrificeSelected: [],
+            blankConvertCount: 0,
+            animating: false,
+        };
+        this.state.player.deck = STARTING_DECK.map(k => makeCard(k));
+    },
+
+    getStrength() {
+        const p = this.state.player;
+        return p.permStrength + p.tempStrength + (p.campfireStrBuff > 0 ? 5 : 0);
+    },
+
+    calcDamage(card) {
+        if (card.damage <= 0) return 0;
+        return card.damage + this.getStrength();
+    },
+
+    canPlayCard(card) {
+        const s = this.state;
+        if (s.phase !== 'battle') return false;
+        const maxPlays = 1 + (s.player.extraPlays || 0);
+        if (s.player.playedCount >= maxPlays) return false;
+        if (card.special === 'blank') return false;
+        if (card.usesLeft <= 0 && card.maxUses > 0) return false;
+        if (card.type === 'attack' && s.player.debuffs.includes('no_attack')) return false;
+        if ((card.type === 'utility' || card.type === 'defense' || card.type === 'power') && s.player.debuffs.includes('no_defense')) return false;
+        return true;
+    },
+
+    isSacrificeEligible(card) {
+        if (card.special === 'blank' || card.special === 'instant_kill') return false;
+        return card.usesLeft >= 3;
+    },
+
+    aliveMonsters() { return this.state.monsters.filter(m => m.currentHp > 0); },
+
+    // 执行出牌，返回动画事件列表
+    playCard(cardId, targetIdx) {
+        const s = this.state;
+        const card = s.player.deck.find(c => c.id === cardId);
+        if (!card || !this.canPlayCard(card)) return null;
+        const target = s.monsters[targetIdx];
+        if (!target || target.currentHp <= 0) return null;
+        if (card.special === 'instant_kill' && target.isBoss) return null;
+
+        s.player.playedCount = (s.player.playedCount || 0) + 1;
+        const events = []; // {type, idx, value, ...}
+
+        // 秒杀牌
+        if (card.special === 'instant_kill') {
+            s.player.hp -= 15;
+            target.currentHp = 0;
+            events.push({ type:'dmg', idx:targetIdx, value:15, toPlayer:false });
+            events.push({ type:'kill', idx:targetIdx });
+            events.push({ type:'selfDmg', value:15 });
+            this.removeCard(cardId);
+            return events;
+        }
+
+        // 消耗耐久
+        if (card.maxUses > 0) card.usesLeft--;
+
+        // 造成伤害
+        if (card.damage > 0) {
+            const dmg = this.calcDamage(card);
+            if (card.aoe) {
+                s.monsters.forEach((m, idx) => {
+                    if (m.currentHp <= 0) return;
+                    let d = dmg;
+                    if (m.block > 0) { const b = Math.min(m.block, d); m.block -= b; d -= b; }
+                    m.currentHp -= d;
+                    events.push({ type:'dmg', idx, value:d, toPlayer:false });
+                    if (m.currentHp <= 0) events.push({ type:'kill', idx });
+                });
+            } else {
+                let d = dmg;
+                if (target.block > 0) { const b = Math.min(target.block, d); target.block -= b; d -= b; }
+                target.currentHp -= d;
+                events.push({ type:'dmg', idx:targetIdx, value:d, toPlayer:false });
+                if (target.currentHp <= 0) events.push({ type:'kill', idx:targetIdx });
+            }
+        }
+
+        // 格挡
+        if (card.block > 0) {
+            s.player.block += card.block;
+            events.push({ type:'block', value:card.block });
+        }
+
+        // 特殊效果
+        if (card.special === 'strength') { s.player.tempStrength += 4; events.push({ type:'buff', value:4 }); }
+        if (card.special === 'lifesteal') { s.player.hp = Math.min(s.player.maxHp, s.player.hp + 3); events.push({ type:'heal', value:3 }); }
+        if (card.special === 'double_hit') {
+            // 第二次打击
+            const dmg2 = this.calcDamage(card);
+            let d2 = dmg2;
+            if (target.block > 0) { const b = Math.min(target.block, d2); target.block -= b; d2 -= b; }
+            target.currentHp -= d2;
+            events.push({ type:'dmg', idx:targetIdx, value:d2, toPlayer:false });
+            if (target.currentHp <= 0) events.push({ type:'kill', idx:targetIdx });
+        }
+        if (card.special === 'replay') {
+            s.player.nextExtraPlays = Math.min((s.player.nextExtraPlays || 0) + 1, 4); // 下回合多出1张，最多额外4张
+            events.push({ type:'buff', value:1 });
+        }
+        if (card.special === 'eternal_strength') {
+            s.player.powers.push('eternal_strength');
+            this.removeCard(cardId); // 能力牌打出后移除
+            events.push({ type:'buff', value:3 });
+        }
+
+        return events;
+    },
+
+    // 怪物行动，返回事件列表
+    monsterTurn() {
+        const s = this.state;
+        // 清除上回合的debuff
+        s.player.debuffs = [];
+        const events = [];
+
+        this.aliveMonsters().forEach(m => {
+            const intent = m.intents[m.intentIdx % m.intents.length];
+            if (intent.type === 'attack') {
+                let dmg = intent.value;
+                const blocked = Math.min(s.player.block, dmg);
+                s.player.block -= blocked; dmg -= blocked;
+                s.player.hp -= dmg;
+                events.push({ type:'monsterAtk', value:intent.value, blocked });
+            } else if (intent.type === 'defend') {
+                m.block += intent.value;
+                events.push({ type:'monsterDef', monsterName:m.name, value:intent.value });
+            } else if (intent.type === 'debuff') {
+                if (intent.debuff && !s.player.debuffs.includes(intent.debuff)) {
+                    s.player.debuffs.push(intent.debuff);
+                    events.push({ type:'debuff', debuff:intent.debuff });
+                }
+            }
+            m.intentIdx++;
+        });
+
+        return events;
+    },
+
+    // 结束回合
+    endTurn() {
+        const s = this.state;
+        // 处理能力牌效果
+        s.player.powers.forEach(p => {
+            if (p === 'eternal_strength') s.player.permStrength += 1;
+        });
+        s.player.block = 0;
+        s.player.playedCount = 0;
+        s.player.extraPlays = s.player.nextExtraPlays || 0;
+        s.player.nextExtraPlays = 0;
+        s.selection = null;
+    },
+
+    removeCard(cardId) { this.state.player.deck = this.state.player.deck.filter(c => c.id !== cardId); },
+
+    // 进入下一层
+    advanceFloor() {
+        const s = this.state;
+        s.combatCount++;
+        // 检查是否该出火堆
+        if (CAMPFIRE_AFTER_COMBATS.includes(s.combatCount)) {
+            s.floor++;
+            s.phase = 'campfire';
+            return 'campfire';
+        }
+        s.floor++;
+        return this.spawnEncounter();
+    },
+
+    // 生成战斗
+    spawnEncounter() {
+        const s = this.state;
+        const encounter = ENCOUNTER_MAP[s.combatCount];
+        if (!encounter) return 'victory';
+
+        s.monsters = [];
+        s.isGroup = false;
+
+        if (Array.isArray(encounter)) {
+            // 群怪
+            s.isGroup = true;
+            encounter.forEach(group => {
+                for (let i = 0; i < group.count; i++) s.monsters.push(makeMonster(group.defKey));
+            });
+        } else {
+            s.monsters.push(makeMonster(encounter.defKey));
+        }
+
+        s.player.block = 0;
+        s.player.tempStrength = 0;
+        s.player.debuffs = [];
+        s.player.playedCount = 0;
+        s.player.extraPlays = 0;
+        s.player.nextExtraPlays = 0;
+        s.player.powers = [];
+        s.phase = 'battle';
+        s.selection = null;
+        return 'battle';
+    },
+
+    campfireChoice(choiceId) {
+        const choice = CAMPFIRE_CHOICES.find(c => c.id === choiceId);
+        if (choice) choice.apply(this.state.player);
+        return this.spawnEncounter();
+    },
+
+    // 战斗胜利检查
+    checkCombatWin() {
+        return this.aliveMonsters().length === 0;
+    },
+
+    // 献祭
+    performSacrifice(ids) {
+        ids.forEach(id => this.removeCard(id));
+        this.state.sacrificeSelected = [];
+        this.state.phase = 'battle';
+    },
+
+    // 空白牌兑换
+    performBlankConvert() {
+        const blanks = this.state.player.deck.filter(c => c.special === 'blank');
+        if (blanks.length < 2) return false;
+        this.removeCard(blanks[0].id);
+        this.removeCard(blanks[1].id);
+        return true;
+    },
+
+    // 保存最高记录
+    saveHighScore() {
+        const hs = parseInt(localStorage.getItem('roguelike_high') || '0');
+        if (this.state.floor > hs) localStorage.setItem('roguelike_high', this.state.floor);
+    },
+
+    getHighScore() { return parseInt(localStorage.getItem('roguelike_high') || '0'); },
+
+    // 开始游戏
+    start() {
+        this.init();
+        this.spawnEncounter();
+        document.getElementById('titleScreen').style.display = 'none';
+        document.getElementById('gameOverScreen').classList.remove('active');
+        document.getElementById('victoryScreen').classList.remove('active');
+        document.getElementById('battleScreen').classList.add('active');
+        UI.render();
+    },
+};
+
+
+/* Anim system removed — animations now handled by UI._playCardAnim / _playMonsterAnim */
+
+
+
+/* ================================================================
+   DRAG SYSTEM — 拖动系统（Pointer Events，比HTML5 Drag可靠）
+   ================================================================ */
+
+const Drag = {
+    cardId: null,
+    startX: 0, startY: 0,
+    ghost: null,
+    isDragging: false,
+    justEnded: false,  // 防止拖动结束后click事件误触
+    currentHoverIdx: -1,
+
+    start(cardId, e) {
+        if (Game.state.animating) return;
+        const card = Game.state.player.deck.find(c => c.id === cardId);
+        if (!card || !Game.canPlayCard(card)) return;
+
+        this.cardId = cardId;
+        this.startX = e.clientX;
+        this.startY = e.clientY;
+        this.isDragging = false;
+
+        // 取消之前的选择
+        Game.state.selection = null;
+        UI.render();
+
+        document.addEventListener('pointermove', this._move);
+        document.addEventListener('pointerup', this._end);
+    },
+
+    _move(e) {
+        const self = Drag;
+        const dx = e.clientX - self.startX;
+        const dy = e.clientY - self.startY;
+
+        if (!self.isDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+            self.isDragging = true;
+            self._createGhost(e);
+        }
+
+        if (self.isDragging && self.ghost) {
+            self.ghost.style.left = (e.clientX - 50) + 'px';
+            self.ghost.style.top = (e.clientY - 20) + 'px';
+
+            // 检测悬停在哪个怪物上
+            const newIdx = self._hitTest(e.clientX, e.clientY);
+            if (newIdx !== self.currentHoverIdx) {
+                self._clearHover();
+                self.currentHoverIdx = newIdx;
+                if (newIdx >= 0) {
+                    const slot = document.getElementById('mslot' + newIdx);
+                    if (slot) slot.classList.add('drop-hover');
+                    self._showPreview(newIdx);
+                }
+            }
+        }
+    },
+
+    _end(e) {
+        const self = Drag;
+        document.removeEventListener('pointermove', self._move);
+        document.removeEventListener('pointerup', self._end);
+
+        if (self.isDragging) {
+            // 拖动结束
+            if (self.currentHoverIdx >= 0) {
+                const idx = self.currentHoverIdx;
+                const card = Game.state.player.deck.find(c => c.id === self.cardId);
+                const m = Game.state.monsters[idx];
+                if (card && m && m.currentHp > 0 && !(card.special === 'instant_kill' && m.isBoss)) {
+                    Game.state.selection = { cardId: self.cardId, targetIdx: idx };
+                }
+            }
+            self._clearHover();
+            self._removeGhost();
+            self.isDragging = false;
+            self.justEnded = true;
+            self.cardId = null;
+            self.currentHoverIdx = -1;
+            UI.render();
+            setTimeout(() => { self.justEnded = false; }, 100);
+        }
+        // 如果不是拖动（短按），不render，让click事件正常触发
+    },
+
+    _createGhost(e) {
+        const card = Game.state.player.deck.find(c => c.id === this.cardId);
+        if (!card) return;
+        const ghost = document.getElementById('dragGhost');
+        ghost.innerHTML = `<div class="card" style="border-color:${UI.typeColor(card.type)};cursor:grabbing;">
+            ${card.aoe?'<div class="aoe-badge">AOE</div>':''}
+            <div class="card-type type-${card.type}">${UI.typeLabel(card.type)}${card.aoe?' (全体)':''}</div>
+            <div class="card-name">${card.name}</div>
+            <div class="card-desc">${card.desc}</div>
+        </div>`;
+        ghost.style.display = 'block';
+        ghost.style.left = (e.clientX - 50) + 'px';
+        ghost.style.top = (e.clientY - 20) + 'px';
+        this.ghost = ghost;
+    },
+
+    _removeGhost() {
+        if (this.ghost) { this.ghost.style.display = 'none'; this.ghost = null; }
+    },
+
+    _hitTest(x, y) {
+        const monsters = Game.state.monsters;
+        for (let i = 0; i < monsters.length; i++) {
+            if (monsters[i].currentHp <= 0) continue;
+            const slot = document.getElementById('mslot' + i);
+            if (!slot) continue;
+            const r = slot.getBoundingClientRect();
+            if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return i;
+        }
+        return -1;
+    },
+
+    _clearHover() {
+        if (this.currentHoverIdx >= 0) {
+            const slot = document.getElementById('mslot' + this.currentHoverIdx);
+            if (slot) slot.classList.remove('drop-hover');
+            const preview = document.getElementById('mpreview' + this.currentHoverIdx);
+            if (preview) preview.innerHTML = '';
+        }
+    },
+
+    _showPreview(idx) {
+        const card = Game.state.player.deck.find(c => c.id === this.cardId);
+        if (!card) return;
+        const preview = document.getElementById('mpreview' + idx);
+        if (!preview) return;
+        const m = Game.state.monsters[idx];
+
+        if (card.special === 'instant_kill') {
+            if (!m.isBoss) preview.innerHTML = '<div class="dmg-preview kill-preview">秒杀</div>';
+            else preview.innerHTML = '<div class="dmg-preview" style="color:var(--text-sec)">无效</div>';
+        } else if (card.damage > 0) {
+            const dmg = Game.calcDamage(card);
+            if (card.aoe) preview.innerHTML = `<div class="dmg-preview aoe-preview">全体 -${dmg}</div>`;
+            else preview.innerHTML = `<div class="dmg-preview">-${dmg}</div>`;
+        } else if (card.block > 0) {
+            preview.innerHTML = `<div class="dmg-preview" style="color:var(--def)">+${card.block}🛡</div>`;
+        }
+    },
+};
+
+// 绑定静态引用
+Drag._move = Drag._move.bind(Drag);
+Drag._end = Drag._end.bind(Drag);
+
+
+/* ================================================================
+   UI — 渲染层
+   ================================================================ */
+
+const UI = {
+    typeColor(type) { return {attack:'var(--atk)',defense:'var(--def)',utility:'var(--def)',power:'#e6b800',special:'var(--spc)'}[type]||'var(--border)'; },
+    typeLabel(type) { return {attack:'ATK',defense:'DEF',utility:'UTIL',power:'PWR',special:'SPC'}[type]||type; },
+
+    render() {
+        if (!Game.state) return;
+        this.renderTopBar();
+        this.renderMonsters();
+        this.renderCards();
+        this.renderActions();
+    },
+
+    renderTopBar() {
+        const p = Game.state.player;
+        const hpPct = Math.max(0, p.hp / p.maxHp * 100);
+        let html = `
+            <div class="stat-group"><span class="stat-label">HP</span><div class="hp-bar-wrap"><div class="hp-bar" style="width:${hpPct}%"></div></div><span class="stat-val">${p.hp}/${p.maxHp}</span></div>
+            <div class="stat-group"><span class="stat-label">🛡</span><span class="stat-val">${p.block}</span></div>
+            <div class="stat-group"><span class="stat-label">💪</span><span class="stat-val">${Game.getStrength()}</span></div>`;
+        if (p.debuffs.includes('no_attack')) html += '<span class="debuff-tag debuff-no-atk">禁攻</span>';
+        if (p.debuffs.includes('no_defense')) html += '<span class="debuff-tag debuff-no-def">禁防</span>';
+        if (p.campfireStrBuff > 0) html += `<span class="buff-tag">🔥力量 +${p.campfireStrBuff}场</span>`;
+        html += `<div class="stage-info">第 ${Game.state.floor} 层</div>`;
+        document.getElementById('topBar').innerHTML = html;
+    },
+
+    renderMonsters() {
+        const s = Game.state;
+        let html = '<div class="monsters-row">';
+        s.monsters.forEach((m, idx) => {
+            const intent = m.intents[m.intentIdx % m.intents.length];
+            const hpPct = Math.max(0, m.currentHp / m.hp * 100);
+            const isDead = m.currentHp <= 0;
+            const isTarget = s.selection && s.selection.targetIdx === idx;
+            let intentHtml = '';
+            if (intent.type === 'attack') intentHtml = `<span class="intent-atk">⚔ ${intent.value}</span>`;
+            else if (intent.type === 'defend') intentHtml = `<span class="intent-def">🛡 ${intent.value}</span>`;
+            else if (intent.type === 'debuff') { const lb = intent.debuff === 'no_attack' ? '禁攻' : '禁防'; intentHtml = `<span class="intent-debuff">✦ ${lb}</span>`; }
+
+            html += `<div class="monster-slot${isDead?' dead':''}${isTarget?' selected-target':''}" id="mslot${idx}">
+                ${m.isBoss?'<span class="boss-tag">BOSS</span>':''}
+                ${s.isGroup && !m.isBoss?'<span class="group-tag">群怪</span>':''}
+                <button class="intent-preview-btn" onclick="UI.toggleIntentPreview(${idx})" title="查看意图循环">?</button>
+                <div class="monster-img sprite-${m.spriteIdx}" id="mshape${idx}"></div>
+                <div class="monster-name">${m.name}</div>
+                <div class="monster-hp-wrap"><div class="monster-hp-bar"><div class="monster-hp-fill" style="width:${hpPct}%"></div></div><span class="monster-hp-text">${m.currentHp}/${m.hp}</span></div>
+                ${m.block>0?`<div class="monster-block">🛡 ${m.block}</div>`:''}
+                <div class="monster-intent">${intentHtml}</div>
+                <div id="mpreview${idx}"></div>
+            </div>`;
+        });
+        html += '</div>';
+        document.getElementById('monsterArea').innerHTML = html;
+    },
+
+    renderCards() {
+        const s = Game.state;
+        const hand = document.getElementById('cardHand');
+        hand.innerHTML = '';
+        s.player.deck.forEach(card => {
+            const canPlay = !s.animating && Game.canPlayCard(card);
+            const isSacElig = s.phase === 'sacrifice' && Game.isSacrificeEligible(card);
+            const isSacSel = s.sacrificeSelected.includes(card.id);
+            const isSel = s.selection && s.selection.cardId === card.id;
+            let cls = 'card';
+            if (s.phase === 'sacrifice') {
+                if (isSacSel) cls += ' selected';
+                else if (!isSacElig) cls += ' disabled';
+            } else if (isSel) cls += ' selected';
+            else if (!canPlay) cls += ' disabled';
+
+            const bc = isSel ? 'var(--accent)' : this.typeColor(card.type);
+            const usesPct = card.maxUses > 0 ? (card.usesLeft / card.maxUses * 100) : 100;
+
+            const el = document.createElement('div');
+            el.className = cls;
+            el.style.borderColor = bc;
+            el.innerHTML = `
+                ${card.aoe?'<div class="aoe-badge">AOE</div>':''}
+                <div class="card-type type-${card.type}">${this.typeLabel(card.type)}${card.aoe?' (全体)':''}</div>
+                <div class="card-name">${card.name}</div>
+                <div class="card-desc">${card.desc}</div>
+                ${card.special!=='blank'?`<div class="card-uses">${card.usesLeft}/${card.maxUses}次</div>`:''}
+                ${card.maxUses>0?`<div class="card-uses-bar"><div class="card-uses-fill" style="width:${usesPct}%;background:${bc}"></div></div>`:''}`;
+
+            // 只有防御牌和AOE牌可以点击选中，其他（单体攻击、秒杀）需要拖动到怪物
+            const clickSelect = canPlay && (card.type === 'utility' || card.type === 'defense' || card.type === 'power' || card.aoe);
+
+            if (clickSelect) {
+                // 防御牌/AOE牌：点击直接选中
+                el.addEventListener('click', () => {
+                    if (s.phase === 'sacrifice') { this._handleSacrificeClick(card.id); return; }
+                    if (!canPlay) return;
+                    if (s.selection && s.selection.cardId === card.id) { s.selection = null; }
+                    else {
+                        const targetIdx = s.monsters.findIndex(m => m.currentHp > 0);
+                        if (targetIdx >= 0) s.selection = { cardId: card.id, targetIdx };
+                    }
+                    this.render();
+                });
+            } else {
+                // 单体攻击/秒杀牌：需要拖动到怪物（献祭模式下也可点击选择）
+                el.addEventListener('pointerdown', (e) => {
+                    if (s.phase === 'sacrifice') { this._handleSacrificeClick(card.id); return; }
+                    if (!canPlay) return;
+                    Drag.start(card.id, e);
+                });
+                el.addEventListener('click', () => {
+                    if (s.phase === 'sacrifice') { this._handleSacrificeClick(card.id); return; }
+                    if (!canPlay) return;
+                    if (Drag.isDragging || Drag.justEnded) return;
+                    if (s.selection && s.selection.cardId === card.id) { s.selection = null; }
+                    else {
+                        const targetIdx = s.monsters.findIndex(m => m.currentHp > 0);
+                        if (targetIdx >= 0) s.selection = { cardId: card.id, targetIdx };
+                    }
+                    this.render();
+                });
+            }
+            hand.appendChild(el);
+        });
+    },
+
+    renderActions() {
+        const s = Game.state;
+        const bar = document.getElementById('actionBar');
+        const hint = document.getElementById('turnHint');
+        let html = '';
+
+        if (s.selection) {
+            // 有选中的牌 → 确认/取消
+            const card = s.player.deck.find(c => c.id === s.selection.cardId);
+            html += `<button class="btn btn-accent" onclick="UI.confirmPlay()">确认出牌</button>`;
+            html += `<button class="btn" onclick="UI.cancelSelection()">取消</button>`;
+            hint.textContent = card ? `已选择: ${card.name}` : '';
+        } else if (s.phase === 'sacrifice') {
+            const eligible = s.player.deck.filter(c => Game.isSacrificeEligible(c));
+            html += `<button class="btn" onclick="UI.cancelSacrifice()" style="border-color:var(--atk)">取消献祭</button>`;
+            if (s.sacrificeSelected.length === 2) {
+                html += `<button class="btn btn-accent" onclick="UI.doSacrifice()">确认献祭</button>`;
+            }
+            hint.textContent = `选择卡牌献祭 (${s.sacrificeSelected.length}/2) — 可选: ${eligible.length}张`;
+            hint.className = 'sacrifice-hint';
+        } else {
+            const eligible = s.player.deck.filter(c => Game.isSacrificeEligible(c));
+            html += `<button class="btn" onclick="UI.skipTurn()">结束回合</button>`;
+            html += `<button class="btn btn-sm" style="color:var(--spc)" onclick="UI.testKillAll()" title="测试用：秒杀所有怪物">秒杀</button>`;
+            // 挂机秒杀按钮
+            const hasBoss = s.monsters.some(m => m.isBoss && m.currentHp > 0);
+            const autoTurns = hasBoss ? 4 : 3;
+            html += `<button class="btn btn-sm" onclick="UI.autoKill(${autoTurns})">挂机${autoTurns}回合秒杀</button>`;
+            html += `<button class="btn btn-sm" onclick="UI.enterSacrifice()" ${eligible.length<2?'disabled':''}>献祭</button>`;
+            const blankCount = s.player.deck.filter(c => c.special === 'blank').length;
+            if (blankCount >= 2) html += `<button class="btn btn-sm" onclick="UI.doBlankConvert()">兑换空白牌</button>`;
+            html += `<button class="btn btn-sm" onclick="UI.showHelp()">?</button>`;
+            // 显示能力牌状态
+            const powerHints = [];
+            if (s.player.powers.includes('eternal_strength')) powerHints.push('永恒强化(每回合+1力量)');
+            if (s.player.nextExtraPlays > 0) powerHints.push(`下回合+${s.player.nextExtraPlays}出牌`);
+            const powerText = powerHints.length ? ' | ' + powerHints.join(', ') : '';
+            hint.textContent = s.animating ? '对方回合...' : `出牌 (${s.player.playedCount || 0}/${1 + (s.player.extraPlays || 0)})${powerText}`;
+            hint.className = 'turn-hint';
+        }
+
+        bar.innerHTML = html;
+    },
+
+    // 确认出牌 → 执行 → 自动结束回合
+    confirmPlay() {
+        const s = Game.state;
+        if (!s.selection) return;
+        const { cardId, targetIdx } = s.selection;
+        s.selection = null;
+        s.animating = true;
+
+        const events = Game.playCard(cardId, targetIdx);
+        if (!events) { s.animating = false; this.render(); return; }
+
+        // 播放受击动画
+        this._playCardAnim(events, () => {
+            s.animating = false;
+            this.render();
+            if (s.player.hp <= 0) { s.player.hp = 0; Game.saveHighScore(); this.render(); document.getElementById('gameOverText').textContent = `你倒在了第 ${s.floor} 层`; document.getElementById('gameOverScreen').classList.add('active'); return; }
+            if (Game.checkCombatWin()) { this.onCombatWin(); return; }
+            // 检查是否还能出牌
+            const maxPlays = 1 + (s.player.extraPlays || 0);
+            if (s.player.playedCount >= maxPlays) {
+                this.doMonsterTurn();
+            }
+            // 否则继续出牌，不进入怪物回合
+        });
+    },
+
+    doMonsterTurn() {
+        const s = Game.state;
+        s.animating = true;
+        const events = Game.monsterTurn();
+        Game.endTurn();
+
+        this._playMonsterAnim(events, () => {
+            s.animating = false;
+            this.render();
+            if (s.player.hp <= 0) { s.player.hp = 0; Game.saveHighScore(); this.render(); document.getElementById('gameOverText').textContent = `你倒在了第 ${s.floor} 层`; document.getElementById('gameOverScreen').classList.add('active'); return; }
+        });
+    },
+
+    // 播放卡牌动画（受击+伤害数字）
+    _playCardAnim(events, onDone) {
+        let delay = 0;
+        events.forEach(e => {
+            if (e.type === 'dmg' && e.value > 0) {
+                setTimeout(() => {
+                    const shape = document.getElementById('mshape' + e.idx);
+                    if (shape) { shape.classList.add('hit-anim'); setTimeout(() => shape.classList.remove('hit-anim'), 120); }
+                    this.showDmgPopup(e.idx, e.value, false);
+                }, delay);
+                delay += 150;
+            }
+            if (e.type === 'heal') {
+                setTimeout(() => this.showPlayerHeal(e.value), delay);
+                delay += 100;
+            }
+        });
+        setTimeout(onDone, delay + 250);
+    },
+
+    // 播放怪物攻击动画
+    _playMonsterAnim(events, onDone) {
+        let delay = 0;
+        events.forEach(e => {
+            if (e.type === 'dmg' && e.value > 0) {
+                setTimeout(() => this.flashPlayerHp(), delay);
+                delay += 150;
+            }
+        });
+        setTimeout(onDone, delay + 200);
+    },
+
+    cancelSelection() { Game.state.selection = null; this.render(); },
+
+    // 切换怪物意图循环预览
+    toggleIntentPreview(idx) {
+        const el = document.getElementById('mpreview' + idx);
+        if (!el) return;
+        if (el.innerHTML) { el.innerHTML = ''; return; }
+        const m = Game.state.monsters[idx];
+        if (!m) return;
+        let html = '<div class="intent-cycle">';
+        m.intents.forEach((intent, i) => {
+            const isCurrent = i === (m.intentIdx % m.intents.length);
+            let label = '';
+            if (intent.type === 'attack') label = `⚔ 攻击 ${intent.value}`;
+            else if (intent.type === 'defend') label = `🛡 防御 ${intent.value}`;
+            else if (intent.type === 'debuff') { const lb = intent.debuff === 'no_attack' ? '禁攻' : '禁防'; label = `✦ ${lb}`; }
+            html += `<div class="ic-item${isCurrent?' ic-current':''}">${isCurrent?'→':'&nbsp;'} ${label}</div>`;
+        });
+        html += '</div>';
+        el.innerHTML = html;
+    },
+
+    // 测试用：直接秒杀所有怪物
+    testKillAll() {
+        const s = Game.state;
+        if (s.animating || s.phase !== 'battle') return;
+        s.monsters.forEach(m => { m.currentHp = 0; });
+        this.render();
+        if (Game.checkCombatWin()) { this.onCombatWin(); }
+    },
+
+    // 跳过出牌，直接结束回合
+    skipTurn() {
+        const s = Game.state;
+        if (s.animating) return;
+        s.selection = null;
+        this.doMonsterTurn();
+    },
+
+    // 挂机X回合后秒杀所有怪物
+    autoKill(turns) {
+        const s = Game.state;
+        if (s.animating) return;
+        s.animating = true;
+        s.selection = null;
+
+        // 模拟X回合：每回合玩家不出牌，怪物行动
+        let autoTurn = () => {
+            if (turns <= 0) {
+                // 秒杀所有怪物
+                s.monsters.forEach(m => { m.currentHp = 0; });
+                s.animating = false;
+                this.render();
+                if (Game.checkCombatWin()) { this.onCombatWin(); }
+                return;
+            }
+            turns--;
+            // 怪物行动
+            const events = Game.monsterTurn();
+            Game.endTurn();
+
+            this._playMonsterAnim(events, () => {
+                s.animating = false;
+                this.render();
+                if (s.player.hp <= 0) { s.player.hp = 0; Game.saveHighScore(); this.render(); document.getElementById('gameOverText').textContent = `你倒在了第 ${s.floor} 层`; document.getElementById('gameOverScreen').classList.add('active'); return; }
+                s.animating = true;
+                setTimeout(autoTurn, 200);
+            });
+        };
+        autoTurn();
+    },
+
+    onCombatWin() {
+        const s = Game.state;
+        if (s.campfireStrBuff > 0) s.campfireStrBuff--;
+        // 先显示奖励，奖励选完后再推进
+        s.phase = 'reward';
+        this.showReward(false, false);
+    },
+
+    // 献祭
+    enterSacrifice() {
+        Game.state.phase = 'sacrifice';
+        Game.state.sacrificeSelected = [];
+        Game.state.selection = null;
+        this.render();
+    },
+
+    cancelSacrifice() { Game.state.phase = 'battle'; Game.state.sacrificeSelected = []; this.render(); },
+
+    _handleSacrificeClick(cardId) {
+        const s = Game.state;
+        const card = s.player.deck.find(c => c.id === cardId);
+        if (!card) return;
+        const idx = s.sacrificeSelected.indexOf(cardId);
+        if (idx >= 0) s.sacrificeSelected.splice(idx, 1);
+        else { if (s.sacrificeSelected.length >= 2 || !Game.isSacrificeEligible(card)) return; s.sacrificeSelected.push(cardId); }
+        this.render();
+    },
+
+    doSacrifice() {
+        const s = Game.state;
+        if (s.sacrificeSelected.length !== 2) return;
+        Game.performSacrifice(s.sacrificeSelected);
+        this.showReward(true);
+    },
+
+    // 空白牌兑换
+    doBlankConvert() {
+        if (!Game.performBlankConvert()) return;
+        this.showReward(false, true);
+    },
+
+    // 奖励
+    showReward(isSacrifice, isBlank) {
+        const modal = document.getElementById('rewardModal');
+        document.getElementById('rewardTitle').textContent = isSacrifice ? '献祭奖励' : isBlank ? '空白牌兑换' : '选择奖励';
+        document.getElementById('rewardSub').textContent = isSacrifice ? '选择一张新卡牌' : isBlank ? `选择卡牌 (${Game.state.blankConvertCount+1}/2)` : '选择一张卡牌，或选择延迟奖励';
+
+        const choices = this._randomRewards(3);
+        const cardsDiv = document.getElementById('rewardCards');
+        cardsDiv.innerHTML = '';
+        choices.forEach(c => {
+            const bc = this.typeColor(c.type);
+            cardsDiv.innerHTML += `<div class="reward-card" style="border-color:${bc}" onclick="UI.pickReward('${c.key}',${!!isSacrifice},${!!isBlank})">
+                <div class="rc-type" style="color:${bc}">${this.typeLabel(c.type)}${c.aoe?' (全体)':''}</div>
+                <div class="rc-name">${c.name}</div>
+                <div class="rc-desc">${c.desc}</div>
+                ${c.special!=='blank'?`<div class="rc-uses">${c.maxUses}次</div>`:''}
+            </div>`;
+        });
+
+        const delayedDiv = document.getElementById('delayedRewards');
+        delayedDiv.innerHTML = '';
+        if (!isSacrifice && !isBlank) {
+            DELAYED_REWARDS.forEach(r => {
+                delayedDiv.innerHTML += `<div class="delayed-btn" onclick="UI.pickDelayed('${r.id}')"><div class="dl-name">${r.icon} ${r.name}</div><div class="dl-desc">${r.desc}</div></div>`;
+            });
+        }
+        modal.classList.add('active');
+    },
+
+    pickReward(key, isSacrifice, isBlank) {
+        Game.state.player.deck.push(makeCard(key));
+        document.getElementById('rewardModal').classList.remove('active');
+
+        if (isBlank) {
+            Game.state.blankConvertCount++;
+            if (Game.state.blankConvertCount < 2) { this.showReward(false, true); return; }
+            Game.state.blankConvertCount = 0;
+            Game.state.phase = 'battle'; this.render(); return;
+        }
+        if (isSacrifice) { Game.state.phase = 'battle'; this.render(); return; }
+        // 正常战斗奖励 → 推进
+        this.onCombatWin_advanceOnly();
+    },
+
+    pickDelayed(id) {
+        const r = DELAYED_REWARDS.find(d => d.id === id);
+        if (r) r.apply(Game.state.player);
+        document.getElementById('rewardModal').classList.remove('active');
+        this.onCombatWin_advanceOnly();
+    },
+
+    onCombatWin_advanceOnly() {
+        const result = Game.advanceFloor();
+        if (result === 'campfire') { document.getElementById('campfireScreen').classList.add('active'); this.render(); }
+        else if (result === 'victory') { Game.saveHighScore(); document.getElementById('victoryText').textContent = '你击败了所有怪物！'; document.getElementById('victoryScreen').classList.add('active'); }
+        else { this.render(); }
+    },
+
+    // 火堆选择
+    campfireChoice(id) {
+        document.getElementById('campfireScreen').classList.remove('active');
+        const result = Game.campfireChoice(id);
+        if (result === 'victory') { Game.saveHighScore(); document.getElementById('victoryText').textContent = '你击败了所有怪物！'; document.getElementById('victoryScreen').classList.add('active'); }
+        else { this.render(); }
+    },
+
+    // 随机奖励：特殊牌各10%，普通牌均分80%，不重复
+    _randomRewards(count) {
+        // 构建带概率的候选池
+        const pool = [];
+        const normalProb = 0.8 / REWARD_NORMALS.length;
+        REWARD_NORMALS.forEach(key => pool.push({ key, prob: normalProb }));
+        REWARD_SPECIALS.forEach(key => pool.push({ key, prob: 0.1 }));
+
+        const results = []; const used = new Set(); let safety = 0;
+        while (results.length < count && safety < 200) {
+            safety++;
+            let rand = Math.random();
+            let cumProb = 0;
+            for (const item of pool) {
+                cumProb += item.prob;
+                if (rand <= cumProb) {
+                    if (!used.has(item.key)) {
+                        used.add(item.key);
+                        results.push({ key: item.key, ...CARD_DEFS[item.key] });
+                    }
+                    break;
+                }
+            }
+        }
+        return results;
+    },
+
+    // 动画辅助
+    showDmgPopup(idx, value, isHeal) {
+        const slot = document.getElementById('mslot' + idx);
+        if (!slot) return;
+        const popup = document.createElement('div');
+        popup.className = 'dmg-popup ' + (isHeal ? 'dmg-green' : 'dmg-red');
+        popup.textContent = (isHeal ? '+' : '-') + value;
+        popup.style.top = '15%'; popup.style.left = '50%'; popup.style.transform = 'translateX(-50%)';
+        slot.appendChild(popup);
+        setTimeout(() => popup.remove(), 700);
+    },
+
+    flashPlayerHp() { /* 可扩展 */ },
+
+    showPlayerHeal(value) { /* 可扩展 */ },
+
+    showHelp() { document.getElementById('helpModal').classList.add('active'); },
+
+    toTitle() {
+        document.getElementById('battleScreen').classList.remove('active');
+        document.getElementById('gameOverScreen').classList.remove('active');
+        document.getElementById('victoryScreen').classList.remove('active');
+        document.getElementById('titleScreen').style.display = 'flex';
+        this.updateHighScore();
+    },
+
+    updateHighScore() {
+        const h = Game.getHighScore();
+        document.getElementById('highScoreText').textContent = h > 0 ? `最高通关层数: ${h}` : '';
+    },
+};
+
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+
+// 暴露给HTML onclick
+window.Game = Game;
+window.UI = UI;
+
+UI.updateHighScore();
+</script>
+</body>
+</html>
