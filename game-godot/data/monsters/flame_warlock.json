@@ -1,0 +1,12 @@
+{
+  "id": "flame_warlock",
+  "name": "烈焰术士",
+  "hp": 40,
+  "is_boss": false,
+  "sprite_idx": 7,
+  "intents": [
+    {"type": "attack", "value": 9, "debuff": null},
+    {"type": "attack", "value": 10, "debuff": null},
+    {"type": "debuff", "value": 0, "debuff": "no_defense"}
+  ]
+}

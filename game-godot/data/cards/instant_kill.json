@@ -1,0 +1,12 @@
+{
+  "id": "instant_kill",
+  "name": "秒杀牌",
+  "type": "special",
+  "damage": 0,
+  "block": 0,
+  "max_uses": 1,
+  "aoe": false,
+  "desc": "扣15HP，击杀一只非Boss",
+  "special": "instant_kill",
+  "sprite": null
+}

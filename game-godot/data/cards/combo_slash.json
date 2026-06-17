@@ -1,0 +1,12 @@
+{
+  "id": "combo_slash",
+  "name": "连劈",
+  "type": "attack",
+  "damage": 5,
+  "block": 0,
+  "max_uses": 5,
+  "aoe": false,
+  "desc": "造成5伤害两次",
+  "special": "double_hit",
+  "sprite": null
+}

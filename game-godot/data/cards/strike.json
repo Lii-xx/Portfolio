@@ -1,0 +1,12 @@
+{
+  "id": "strike",
+  "name": "打击",
+  "type": "attack",
+  "damage": 12,
+  "block": 0,
+  "max_uses": 5,
+  "aoe": false,
+  "desc": "造成12点伤害",
+  "special": null,
+  "sprite": null
+}

@@ -1,0 +1,295 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/backgrounds/battle_bg.png" id="1"]
+[ext_resource type="Shader" path="res://shaders/crt_scanlines.gdshader" id="2"]
+[ext_resource type="Script" path="res://scripts/ui/title_screen.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/ui/battle_screen.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/ui/top_bar.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/ui/action_bar.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/ui/campfire_screen.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/ui/reward_modal.gd" id="8"]
+[ext_resource type="Script" path="res://scripts/ui/end_screen.gd" id="9"]
+
+[sub_resource id="1" type="ShaderMaterial"]
+shader = ExtResource("2")
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1")
+stretch_mode = 1
+
+[node name="CRTOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0)
+material = SubResource("1")
+
+[node name="TitleScreen" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3")
+
+[node name="TitleLabel" type="Label" parent="TitleScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 120.0
+offset_right = 250.0
+offset_bottom = 220.0
+horizontal_alignment = 1
+text = "卡牌Roguelike"
+
+[node name="SubLabel" type="Label" parent="TitleScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -220.0
+offset_top = 240.0
+offset_right = 220.0
+offset_bottom = 300.0
+horizontal_alignment = 1
+text = "第一人称卡牌战斗 · 拖动卡牌到怪物身上出牌
+每回合一张牌，每三关遭遇群怪"
+autowrap_mode = 2
+
+[node name="StartButton" type="Button" parent="TitleScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -80.0
+offset_top = 330.0
+offset_right = 80.0
+offset_bottom = 365.0
+text = "开始游戏"
+
+[node name="HighScoreLabel" type="Label" parent="TitleScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 380.0
+offset_right = 100.0
+offset_bottom = 400.0
+horizontal_alignment = 1
+
+[node name="HelpButton" type="Button" parent="TitleScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -40.0
+offset_top = 410.0
+offset_right = 40.0
+offset_bottom = 438.0
+text = "玩法说明"
+
+[node name="BattleScreen" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4")
+
+[node name="TopBar" type="HBoxContainer" parent="BattleScreen"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 44.0
+grow_horizontal = 2
+script = ExtResource("5")
+
+[node name="MonsterArea" type="CenterContainer" parent="BattleScreen"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 50.0
+offset_bottom = -160.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CardArea" type="VBoxContainer" parent="BattleScreen"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -150.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="CardHand" type="HBoxContainer" parent="BattleScreen/CardArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ActionBar" type="HBoxContainer" parent="BattleScreen/CardArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("6")
+
+[node name="TurnHint" type="Label" parent="BattleScreen/CardArea"]
+layout_mode = 2
+text = "出牌 (0/1)"
+horizontal_alignment = 1
+
+[node name="CampfireScreen" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("7")
+
+[node name="TitleLabel" type="Label" parent="CampfireScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 100.0
+offset_right = 120.0
+offset_bottom = 150.0
+horizontal_alignment = 1
+text = "🔥 火堆"
+
+[node name="SubLabel" type="Label" parent="CampfireScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 160.0
+offset_right = 100.0
+offset_bottom = 185.0
+horizontal_alignment = 1
+text = "选择一项增益"
+
+[node name="ChoicesContainer" type="HBoxContainer" parent="CampfireScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 220.0
+offset_right = 200.0
+offset_bottom = 330.0
+
+[node name="RewardModal" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8")
+
+[node name="Modal" type="PanelContainer" parent="RewardModal"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="RewardModal/Modal"]
+layout_mode = 2
+text = "选择奖励"
+horizontal_alignment = 1
+
+[node name="CardsContainer" type="HBoxContainer" parent="RewardModal/Modal"]
+layout_mode = 2
+
+[node name="DelayedContainer" type="HBoxContainer" parent="RewardModal/Modal"]
+layout_mode = 2
+
+[node name="EndScreen" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("9")
+
+[node name="TitleLabel" type="Label" parent="EndScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 160.0
+offset_right = 120.0
+offset_bottom = 220.0
+horizontal_alignment = 1
+text = "战败"
+
+[node name="InfoLabel" type="Label" parent="EndScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 240.0
+offset_right = 150.0
+offset_bottom = 270.0
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="EndScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -70.0
+offset_top = 300.0
+offset_right = 70.0
+offset_bottom = 332.0
+text = "重新挑战"
+
+[node name="TitleButton" type="Button" parent="EndScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -50.0
+offset_top = 340.0
+offset_right = 50.0
+offset_bottom = 372.0
+text = "返回标题"

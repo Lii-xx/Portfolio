@@ -1,0 +1,12 @@
+{
+  "id": "rogue",
+  "name": "盗贼刺客",
+  "hp": 28,
+  "is_boss": false,
+  "sprite_idx": 2,
+  "intents": [
+    {"type": "attack", "value": 8, "debuff": null},
+    {"type": "debuff", "value": 0, "debuff": "no_attack"},
+    {"type": "attack", "value": 10, "debuff": null}
+  ]
+}

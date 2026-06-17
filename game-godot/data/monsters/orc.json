@@ -1,0 +1,12 @@
+{
+  "id": "orc",
+  "name": "兽人战士",
+  "hp": 55,
+  "is_boss": false,
+  "sprite_idx": 5,
+  "intents": [
+    {"type": "defend", "value": 10, "debuff": null},
+    {"type": "attack", "value": 11, "debuff": null},
+    {"type": "attack", "value": 13, "debuff": null}
+  ]
+}

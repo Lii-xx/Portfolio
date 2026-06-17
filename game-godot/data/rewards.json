@@ -1,0 +1,6 @@
+{
+  "special_cards": ["blank", "instant_kill"],
+  "special_prob": 0.10,
+  "normal_cards": ["cleave", "iron_wall", "dual", "war_cry", "vampiric", "combo_slash", "replay", "iron_shield", "eternal_str"],
+  "reward_count": 3
+}

@@ -1,0 +1,12 @@
+{
+  "id": "defend",
+  "name": "防御",
+  "type": "utility",
+  "damage": 0,
+  "block": 10,
+  "max_uses": 5,
+  "aoe": false,
+  "desc": "获得10点格挡",
+  "special": null,
+  "sprite": null
+}

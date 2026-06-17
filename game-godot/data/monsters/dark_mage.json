@@ -1,0 +1,12 @@
+{
+  "id": "dark_mage",
+  "name": "黑暗法师",
+  "hp": 32,
+  "is_boss": false,
+  "sprite_idx": 4,
+  "intents": [
+    {"type": "debuff", "value": 0, "debuff": "no_defense"},
+    {"type": "attack", "value": 9, "debuff": null},
+    {"type": "debuff", "value": 0, "debuff": "no_attack"}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "encounters": [
+    {"monsters": ["goblin"]},
+    {"monsters": ["skeleton"]},
+    {"monsters": ["goblin", "goblin", "goblin"], "is_group": true},
+    {"monsters": ["rogue"]},
+    {"monsters": ["werewolf"]},
+    {"monsters": ["goblin", "goblin", "dark_mage"], "is_group": true},
+    {"monsters": ["orc"]},
+    {"monsters": ["dark_mage"]},
+    {"monsters": ["frost_giant"]},
+    {"monsters": ["flame_warlock", "orc"], "is_group": true},
+    {"monsters": ["shadow_dragon"]},
+    {"monsters": ["frost_giant", "flame_warlock"], "is_group": true}
+  ],
+  "campfire_after": [4, 9],
+  "starting_deck": ["strike", "strike", "strike", "defend", "defend", "heavy_strike"]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "dual",
+  "name": "攻防兼备",
+  "type": "attack",
+  "damage": 8,
+  "block": 8,
+  "max_uses": 4,
+  "aoe": false,
+  "desc": "造成8伤害，获得8格挡",
+  "special": null,
+  "sprite": null
+}

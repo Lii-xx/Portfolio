@@ -1,0 +1,12 @@
+{
+  "id": "iron_shield",
+  "name": "铁壁",
+  "type": "utility",
+  "damage": 0,
+  "block": 15,
+  "max_uses": 5,
+  "aoe": false,
+  "desc": "获得15点格挡",
+  "special": null,
+  "sprite": null
+}

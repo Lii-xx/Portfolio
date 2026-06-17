@@ -1,0 +1,14 @@
+{
+  "id": "shadow_dragon",
+  "name": "暗影巨龙",
+  "hp": 80,
+  "is_boss": true,
+  "sprite_idx": 8,
+  "intents": [
+    {"type": "attack", "value": 12, "debuff": null},
+    {"type": "defend", "value": 10, "debuff": null},
+    {"type": "attack", "value": 15, "debuff": null},
+    {"type": "debuff", "value": 0, "debuff": "no_attack"},
+    {"type": "attack", "value": 18, "debuff": null}
+  ]
+}

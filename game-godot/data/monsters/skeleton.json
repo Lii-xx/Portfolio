@@ -1,0 +1,12 @@
+{
+  "id": "skeleton",
+  "name": "骷髅战士",
+  "hp": 35,
+  "is_boss": false,
+  "sprite_idx": 1,
+  "intents": [
+    {"type": "attack", "value": 7, "debuff": null},
+    {"type": "defend", "value": 6, "debuff": null},
+    {"type": "attack", "value": 9, "debuff": null}
+  ]
+}

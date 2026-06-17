@@ -1,0 +1,12 @@
+{
+  "id": "werewolf",
+  "name": "狼人",
+  "hp": 45,
+  "is_boss": false,
+  "sprite_idx": 3,
+  "intents": [
+    {"type": "attack", "value": 9, "debuff": null},
+    {"type": "attack", "value": 11, "debuff": null},
+    {"type": "attack", "value": 13, "debuff": null}
+  ]
+}

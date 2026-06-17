@@ -1,0 +1,12 @@
+{
+  "id": "heavy_strike",
+  "name": "重击",
+  "type": "attack",
+  "damage": 20,
+  "block": 0,
+  "max_uses": 4,
+  "aoe": false,
+  "desc": "造成20点伤害",
+  "special": null,
+  "sprite": null
+}

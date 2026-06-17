@@ -1,0 +1,12 @@
+{
+  "id": "blank",
+  "name": "空白牌",
+  "type": "special",
+  "damage": 0,
+  "block": 0,
+  "max_uses": 0,
+  "aoe": false,
+  "desc": "每2张兑换2次卡牌奖励",
+  "special": "blank",
+  "sprite": null
+}

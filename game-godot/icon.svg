@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="16" fill="#0d0221"/>
+  <rect x="24" y="24" width="36" height="52" rx="4" fill="#ff2e88" opacity="0.9"/>
+  <rect x="68" y="32" width="36" height="52" rx="4" fill="#00f0ff" opacity="0.9"/>
+  <text x="64" y="104" text-anchor="middle" fill="#00ff41" font-family="monospace" font-size="14" font-weight="bold">RPG</text>
+</svg>

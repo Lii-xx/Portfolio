@@ -1,0 +1,35 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="CardRoguelike"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+
+[autoload]
+
+EventBus="*res://scripts/autoload/event_bus.gd"
+CardRegistry="*res://scripts/autoload/card_registry.gd"
+MonsterRegistry="*res://scripts/autoload/monster_registry.gd"
+EncounterRegistry="*res://scripts/autoload/encounter_registry.gd"
+EffectRegistry="*res://scripts/autoload/effect_registry.gd"
+SoundManager="*res://scripts/autoload/sound_manager.gd"
+GameManager="*res://scripts/autoload/game_manager.gd"
+
+[display]
+
+window/size/viewport_width=960
+window/size/viewport_height=540
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"

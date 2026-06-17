@@ -1,0 +1,20 @@
+{
+  "rewards": [
+    {
+      "id": "hp",
+      "icon": "❤️",
+      "name": "+5 最大生命",
+      "desc": "提升生命上限",
+      "type": "max_hp",
+      "value": 5
+    },
+    {
+      "id": "str",
+      "icon": "💪",
+      "name": "+2 永久力量",
+      "desc": "所有攻击伤害+2",
+      "type": "perm_strength",
+      "value": 2
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "frost_giant",
+  "name": "冰霜巨人",
+  "hp": 70,
+  "is_boss": false,
+  "sprite_idx": 6,
+  "intents": [
+    {"type": "defend", "value": 14, "debuff": null},
+    {"type": "attack", "value": 15, "debuff": null},
+    {"type": "debuff", "value": 0, "debuff": "no_attack"}
+  ]
+}

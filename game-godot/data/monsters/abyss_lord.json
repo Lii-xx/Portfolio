@@ -1,0 +1,15 @@
+{
+  "id": "abyss_lord",
+  "name": "深渊领主",
+  "hp": 100,
+  "is_boss": true,
+  "sprite_idx": 9,
+  "intents": [
+    {"type": "attack", "value": 10, "debuff": null},
+    {"type": "debuff", "value": 0, "debuff": "no_defense"},
+    {"type": "attack", "value": 14, "debuff": null},
+    {"type": "debuff", "value": 0, "debuff": "no_attack"},
+    {"type": "defend", "value": 12, "debuff": null},
+    {"type": "attack", "value": 20, "debuff": null}
+  ]
+}
