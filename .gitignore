@@ -1,0 +1,14 @@
+# Codebuddy
+.codebuddy/
+
+# 游戏数值模拟测试
+游戏数值模拟测试/
+
+# Godot 编辑器缓存
+game-godot/.godot/
+
+# Godot 编辑器（体积太大，不提交）
+godot-editor/
+
+# Office 临时文件（~$ 开头）
+~$*
