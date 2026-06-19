@@ -2,11 +2,13 @@
   "id": "iron_wall",
   "name": "铁壁斩",
   "type": "attack",
+  "cost": 1,
   "damage": 6,
-  "block": 10,
+  "block": 6,
   "max_uses": 4,
   "aoe": true,
-  "desc": "对全体造成6伤害，获得10格挡",
+  "desc": "对全体造成6伤害，获得6格挡",
   "special": null,
-  "sprite": null
+  "sprite": null,
+  "art": ""
 }

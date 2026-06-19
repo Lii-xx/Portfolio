@@ -1,0 +1,14 @@
+{
+  "id": "thorn_armor",
+  "name": "荆棘护甲",
+  "type": "utility",
+  "cost": 1,
+  "damage": 0,
+  "block": 4,
+  "max_uses": 5,
+  "aoe": false,
+  "desc": "获得4格挡，本关卡中受击反弹4伤害（可叠加）",
+  "special": "thorn_armor",
+  "sprite": null,
+  "art": ""
+}

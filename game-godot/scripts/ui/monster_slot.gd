@@ -16,8 +16,35 @@ var intent_label: Label
 var boss_tag: Label
 var group_tag: Label
 
+# 着色器材质（T5：受击闪白/死亡溶解/中毒变绿）
+var _hit_flash_mat: ShaderMaterial
+var _dissolve_mat: ShaderMaterial
+var _poison_mat: ShaderMaterial
+var _is_dying: bool = false  # 死亡动画进行中，避免被 resting 覆盖
+
 func _ready() -> void:
 	_build_ui()
+	_init_shader_materials()
+
+## 初始化着色器材质（T5）
+func _init_shader_materials() -> void:
+	var hit_flash_shader = load("res://shaders/hit_flash.gdshader")
+	if hit_flash_shader:
+		_hit_flash_mat = ShaderMaterial.new()
+		_hit_flash_mat.shader = hit_flash_shader
+		_hit_flash_mat.set_shader_parameter("flash_intensity", 0.0)
+
+	var dissolve_shader = load("res://shaders/dissolve.gdshader")
+	if dissolve_shader:
+		_dissolve_mat = ShaderMaterial.new()
+		_dissolve_mat.shader = dissolve_shader
+		_dissolve_mat.set_shader_parameter("dissolve_amount", 0.0)
+
+	var poison_shader = load("res://shaders/poison.gdshader")
+	if poison_shader:
+		_poison_mat = ShaderMaterial.new()
+		_poison_mat.shader = poison_shader
+		_poison_mat.set_shader_parameter("poison_amount", 0.0)
 
 func _build_ui() -> void:
 	add_theme_constant_override("separation", 4)
@@ -147,6 +174,10 @@ func setup(data: Dictionary, idx: int, is_group: bool) -> void:
 		modulate = Color(1, 1, 1, 1)
 		mouse_filter = Control.MOUSE_FILTER_STOP
 
+	# 重置死亡标记，应用 resting 材质（T5：中毒变绿）
+	_is_dying = false
+	_apply_resting_material()
+
 func _update_hp() -> void:
 	var current = monster_data.get("current_hp", 0)
 	var max_hp = monster_data.get("hp", 1)
@@ -158,6 +189,7 @@ func play_hit_animation(damage: int) -> void:
 	TweenHelpers.monster_hit_shake(self)
 	TweenHelpers.damage_popup(self, damage, false)
 	_update_hp()
+	_play_hit_flash()  # T5：受击闪白着色器
 
 ## 播放治疗动画
 func play_heal_animation(amount: int) -> void:
@@ -166,7 +198,49 @@ func play_heal_animation(amount: int) -> void:
 
 ## 播放死亡动画
 func play_death_animation() -> void:
+	_is_dying = true
+	_play_dissolve()  # T5：死亡溶解着色器
 	TweenHelpers.monster_death(self)
+
+## 应用 resting 材质：中毒时用 poison 着色器，否则清除（T5）
+func _apply_resting_material() -> void:
+	if _is_dying:
+		return  # 死亡动画进行中，不覆盖 dissolve 材质
+	if not sprite:
+		return
+	var poison_stacks = monster_data.get("poison", 0)
+	if poison_stacks > 0 and _poison_mat:
+		sprite.material = _poison_mat
+		# 中毒层数越高，绿色越深（0.4~0.8）
+		var amount = clampf(float(poison_stacks) / 10.0, 0.4, 0.8)
+		_poison_mat.set_shader_parameter("poison_amount", amount)
+	else:
+		sprite.material = null
+
+## 受击闪白：临时切到 hit_flash 材质，脉冲后恢复 resting（T5）
+func _play_hit_flash() -> void:
+	if not _hit_flash_mat or not sprite:
+		return
+	# 死亡中不再触发闪白
+	if _is_dying:
+		return
+	sprite.material = _hit_flash_mat
+	_hit_flash_mat.set_shader_parameter("flash_intensity", 0.0)
+	var tween = create_tween()
+	# 峰值 0.7，避免与 monster_hit_shake 的 modulate 闪白叠加过曝
+	tween.tween_property(_hit_flash_mat, "shader_parameter/flash_intensity", 0.7, 0.05)
+	tween.tween_property(_hit_flash_mat, "shader_parameter/flash_intensity", 0.0, 0.12)
+	# 闪白结束后恢复 resting 材质
+	tween.tween_callback(_apply_resting_material)
+
+## 死亡溶解：切到 dissolve 材质，dissolve_amount 0→1（T5）
+func _play_dissolve() -> void:
+	if not _dissolve_mat or not sprite:
+		return
+	sprite.material = _dissolve_mat
+	_dissolve_mat.set_shader_parameter("dissolve_amount", 0.0)
+	var tween = create_tween()
+	tween.tween_property(_dissolve_mat, "shader_parameter/dissolve_amount", 1.0, 0.4)
 
 ## 点击怪物 → 设为目标
 func _gui_input(event: InputEvent) -> void:
@@ -174,3 +248,52 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		monster_clicked.emit(slot_idx)
+
+## 拖拽悬停高亮（被DragSystem调用）
+func set_drop_hover(enabled: bool) -> void:
+	if enabled:
+		modulate = Color(1.2, 1.2, 1.2, 1)  # 变亮
+	else:
+		modulate = Color(1, 1, 1, 1)
+
+## 显示伤害预览（被DragSystem调用）
+func show_damage_preview(dmg: int, is_aoe: bool) -> void:
+	var preview = get_node_or_null("DamagePreview")
+	if not preview:
+		preview = Label.new()
+		preview.name = "DamagePreview"
+		preview.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		preview.add_theme_font_size_override("font_size", 16)
+		preview.add_theme_color_override("font_color", Color(1, 0.18, 0.53, 1))
+		preview.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
+		preview.add_theme_constant_override("shadow_offset_x", 1)
+		preview.add_theme_constant_override("shadow_offset_y", 1)
+		preview.z_index = 10
+		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(preview)
+	preview.text = ("全体 -" if is_aoe else "-") + str(dmg)
+	preview.visible = true
+
+## 显示格挡预览（被DragSystem调用）
+func show_block_preview(block: int) -> void:
+	var preview = get_node_or_null("DamagePreview")
+	if not preview:
+		preview = Label.new()
+		preview.name = "DamagePreview"
+		preview.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		preview.add_theme_font_size_override("font_size", 16)
+		preview.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
+		preview.add_theme_constant_override("shadow_offset_x", 1)
+		preview.add_theme_constant_override("shadow_offset_y", 1)
+		preview.z_index = 10
+		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(preview)
+	preview.text = "+" + str(block) + "🛡"
+	preview.add_theme_color_override("font_color", Color(0, 0.94, 1, 1))
+	preview.visible = true
+
+## 清除预览
+func clear_preview() -> void:
+	var preview = get_node_or_null("DamagePreview")
+	if preview:
+		preview.visible = false

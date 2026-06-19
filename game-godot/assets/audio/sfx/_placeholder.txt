@@ -1,0 +1,17 @@
+此目录存放SFX短音效文件（.wav格式）。
+T1阶段为空，T2阶段用户需放入以下文件：
+- ui_click.wav      UI点击
+- card_play.wav     出牌
+- card_draw.wav     抽牌
+- attack_hit.wav    攻击命中
+- attack_heavy.wav  重击/AOE
+- block.wav         格挡
+- heal.wav          治疗
+- monster_die.wav   怪物死亡
+- player_hurt.wav   玩家受伤
+- dice_roll.wav     骰子滚动
+- buff.wav          增益
+- debuff.wav        减益
+- poison.wav        中毒
+- fire.wav          火焰
+- level_up.wav      升级

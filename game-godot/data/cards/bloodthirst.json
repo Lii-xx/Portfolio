@@ -1,0 +1,14 @@
+{
+  "id": "bloodthirst",
+  "name": "渴血",
+  "type": "attack",
+  "cost": 2,
+  "damage": 10,
+  "block": 0,
+  "max_uses": 3,
+  "aoe": false,
+  "desc": "造成10伤害，力量≥5时回复实际伤害",
+  "special": "bloodthirst",
+  "sprite": null,
+  "art": ""
+}

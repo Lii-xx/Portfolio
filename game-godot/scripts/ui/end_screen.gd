@@ -31,6 +31,8 @@ func _on_combat_lost(floor: int) -> void:
 func _on_victory() -> void:
 	_is_victory = true
 	visible = true
+	# 通关BGM
+	EventBus.bgm_requested.emit("victory")
 	var title_label = get_node_or_null("TitleLabel")
 	if title_label:
 		title_label.text = "通关!"

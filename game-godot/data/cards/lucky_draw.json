@@ -1,0 +1,14 @@
+{
+  "id": "lucky_draw",
+  "name": "吸欧气",
+  "type": "power",
+  "cost": 1,
+  "damage": 0,
+  "block": 0,
+  "max_uses": 0,
+  "aoe": false,
+  "desc": "骰子1-3概率降低50%，4-6概率增加50%",
+  "special": "lucky_draw",
+  "sprite": null,
+  "art": ""
+}

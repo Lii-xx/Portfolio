@@ -1,15 +1,19 @@
 extends Panel
 ## CardUI - 单张卡牌UI脚本
 ## 处理拖拽、悬停、选中动效
+## 交互规则（对齐HTML line 1160 clickSelect）：
+##   - utility/power/AOE 牌：点击直接选中（自动选第一个活着的怪）
+##   - 单体攻击牌：必须拖拽到怪物上才能选中
+##   - 献祭模式：所有牌点击切换选中
 
-signal card_drag_started(card_id: int, event: InputEvent)
-signal card_clicked(card_id: int)
+signal card_drag_started(card_id: int)   # 拖拽开始（移动超过阈值）
+signal card_clicked(card_id: int)        # 短按点击（仅可点击牌）
 signal card_hover_changed(card_id: int, is_hover: bool)
 
 var card_data: Dictionary = {}
 var is_selected: bool = false
 var is_disabled: bool = false
-var is_dragging: bool = false
+var _potential_drag: bool = false        # 鼠标按下后等待判断是否拖拽
 var _drag_start_pos: Vector2 = Vector2.ZERO
 var _drag_threshold: float = 5.0
 
@@ -18,6 +22,7 @@ var name_label: Label
 var desc_label: Label
 var uses_label: Label
 var aoe_badge: Label
+var art_rect: TextureRect
 
 var _initialized: bool = false
 
@@ -30,6 +35,23 @@ func _ready() -> void:
 
 	# 获取子节点引用（标签嵌套在 Layout/VBox 下）
 	_resolve_labels()
+
+	# 动态创建卡牌图片 TextureRect，插入 Layout vbox 最顶部（图片在上，文字在下）
+	# 兼容性保护：找不到 Layout 就跳过（节点树由 battle_screen.gd 构建）
+	var vbox = get_node_or_null("Layout")
+	if vbox != null:
+		# 若已存在则不重复创建
+		if art_rect == null:
+			art_rect = TextureRect.new()
+			art_rect.name = "CardArt"
+			art_rect.custom_minimum_size = Vector2(88, 56)
+			art_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			art_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			art_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			art_rect.visible = false  # 无图时不显示
+			vbox.add_child(art_rect)
+			# 移到 vbox 第一个位置（TypeLabel 之前）
+			art_rect.get_parent().move_child(art_rect, 0)
 
 	# 如果setup()之前就被调用了，重新应用
 	if _initialized and not card_data.is_empty():
@@ -50,13 +72,15 @@ func _resolve_labels() -> void:
 	if uses_label == null:
 		uses_label = get_node_or_null("Layout/UsesLabel")
 	aoe_badge = get_node_or_null("AoeBadge")
+	# 兼容获取 CardArt（防止 _ready 先于外部 add_child 的情况）
+	art_rect = get_node_or_null("Layout/CardArt")
 
 func _ensure_stylebox() -> void:
 	# 确保有一个base stylebox，避免get_theme_stylebox报错
 	var current = get_theme_stylebox("panel")
 	if current == null or current is StyleBoxEmpty:
 		var default_style = StyleBoxFlat.new()
-		default_style.bg_color = Color(0.12, 0.06, 0.29, 0.92)
+		default_style.bg_color = Color(0.12, 0.06, 0.29, 1)
 		default_style.border_color = Color(0, 1, 0.25, 0.25)
 		default_style.border_width_bottom = 2
 		default_style.border_width_top = 2
@@ -84,6 +108,20 @@ func setup(data: Dictionary, can_play: bool) -> void:
 	_apply_visuals()
 
 func _apply_visuals() -> void:
+	# 加载卡牌图片（art 为空 / 文件不存在 / load 失败 三种情况都隐藏 TextureRect，绝不报错）
+	var art_path = card_data.get("art", "")
+	if art_path == "" or not ResourceLoader.exists(art_path):
+		if art_rect:
+			art_rect.visible = false
+			art_rect.texture = null
+	else:
+		var tex = load(art_path)
+		if tex and art_rect:
+			art_rect.texture = tex
+			art_rect.visible = true
+		elif art_rect:
+			art_rect.visible = false
+
 	if name_label:
 		name_label.text = card_data.get("name", "???")
 	if desc_label:
@@ -91,7 +129,14 @@ func _apply_visuals() -> void:
 	
 	var card_type = card_data.get("type", "attack")
 	if type_label:
-		type_label.text = _type_label(card_type)
+		# 显示能量消耗 + 类型标签（对齐HTML：⚡cost 类型）
+		var cost = card_data.get("cost", 0)
+		var cost_prefix = ""
+		if card_data.get("special") == "spin":
+			cost_prefix = "⚡X "  # 旋斩消耗全部能量
+		elif cost > 0:
+			cost_prefix = "⚡" + str(cost) + " "
+		type_label.text = cost_prefix + _type_label(card_type)
 	if card_data.get("aoe", false):
 		if aoe_badge:
 			aoe_badge.visible = true
@@ -123,7 +168,7 @@ func _set_border_color(color: Color) -> void:
 		style = current.duplicate()
 	else:
 		style = StyleBoxFlat.new()
-		style.bg_color = Color(0.12, 0.06, 0.29, 0.92)
+		style.bg_color = Color(0.12, 0.06, 0.29, 1)
 		style.border_width_bottom = 2
 		style.border_width_top = 2
 		style.border_width_left = 2
@@ -151,7 +196,7 @@ func set_sacrifice_selected(selected: bool) -> void:
 		style = current.duplicate()
 	else:
 		style = StyleBoxFlat.new()
-		style.bg_color = Color(0.12, 0.06, 0.29, 0.92)
+		style.bg_color = Color(0.12, 0.06, 0.29, 1)
 		style.border_width_bottom = 2
 		style.border_width_top = 2
 		style.border_width_left = 2
@@ -166,7 +211,7 @@ func set_sacrifice_selected(selected: bool) -> void:
 		modulate.a = 1.0
 	else:
 		style.border_color = _type_color(card_data.get("type", "attack"))
-		style.bg_color = Color(0.12, 0.06, 0.29, 0.92)
+		style.bg_color = Color(0.12, 0.06, 0.29, 1)
 		modulate.a = 0.3 if is_disabled else 1.0
 	add_theme_stylebox_override("panel", style)
 
@@ -186,28 +231,46 @@ func _type_color(type: String) -> Color:
 		"special": return Color(0.94, 0.92, 1, 1)    # --spc
 		_: return Color(0, 1, 0.25, 0.25)            # --border
 
+## 是否可点击选中（utility/power/AOE 牌）
+func _is_click_select() -> bool:
+	var card_type = card_data.get("type", "attack")
+	var is_aoe = card_data.get("aoe", false)
+	return card_type in ["utility", "power"] or is_aoe
+
 func _gui_input(event: InputEvent) -> void:
 	if is_disabled:
 		return
-	
-	# 献祭模式下点击切换选中
-	if GameManager.state.get("phase") == "sacrifice":
+
+	var phase = GameManager.state.get("phase", "battle")
+
+	# 献祭模式：所有牌点击切换选中
+	if phase == "sacrifice":
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			card_clicked.emit(card_data["id"])
 		return
-	
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_drag_start_pos = event.global_position
-			is_dragging = false
-		elif not is_dragging:
-			card_clicked.emit(card_data["id"])
-	
-	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+
+	# 鼠标按下：记录起点，等待判断是否拖拽
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_drag_start_pos = event.global_position
+		_potential_drag = true
+		return
+
+	# 鼠标移动（按住）：超过阈值 → 触发拖拽
+	if event is InputEventMouseMotion and _potential_drag and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		var dist = event.global_position.distance_to(_drag_start_pos)
-		if dist > _drag_threshold and not is_dragging:
-			is_dragging = true
-			card_drag_started.emit(card_data["id"], event)
+		if dist > _drag_threshold:
+			_potential_drag = false
+			card_drag_started.emit(card_data["id"])
+		return
+
+	# 鼠标释放：如果没拖拽且是可点击牌 → 选中
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+		if _potential_drag:
+			_potential_drag = false
+			if _is_click_select():
+				card_clicked.emit(card_data["id"])
+			# 单体攻击牌短按不做任何事（必须拖到怪物）
+		return
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_MOUSE_ENTER:

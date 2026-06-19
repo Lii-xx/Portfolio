@@ -4,6 +4,8 @@ extends Control
 func _ready() -> void:
 	print("[TitleScreen] _ready called")
 	_update_high_score()
+	# 标题页BGM
+	EventBus.bgm_requested.emit("title")
 	EventBus.title_requested.connect(_on_title_requested)
 	EventBus.game_started.connect(_on_game_started)
 	EventBus.screen_requested.connect(_on_screen_requested)
@@ -44,6 +46,8 @@ func _on_game_started() -> void:
 func _on_title_requested() -> void:
 	visible = true
 	_update_high_score()
+	# 返回标题页BGM
+	EventBus.bgm_requested.emit("title")
 
 func _on_screen_requested(screen_name: String) -> void:
 	match screen_name:

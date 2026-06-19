@@ -1,0 +1,14 @@
+{
+  "id": "shield_counter",
+  "name": "盾反",
+  "type": "power",
+  "cost": 2,
+  "damage": 0,
+  "block": 0,
+  "max_uses": 0,
+  "aoe": false,
+  "desc": "回合结束对随机敌人打出当前防御的一半",
+  "special": "shield_counter",
+  "sprite": null,
+  "art": ""
+}

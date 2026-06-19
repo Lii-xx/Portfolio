@@ -130,6 +130,35 @@ body::after{
 .nav a:hover::after{width:100%;}
 .nav a.accent{color:var(--pink);text-shadow:0 0 6px rgba(255,46,136,.5);}
 .nav a.accent::after{background:var(--pink);}
+/* 卡牌Demo 下拉 */
+.demo-dropdown{position:relative;}
+.demo-trigger{
+    display:inline-flex;align-items:center;gap:6px;
+    color:var(--pink);text-shadow:0 0 6px rgba(255,46,136,.5);
+    background:none;border:none;font:inherit;font-size:14px;font-weight:500;
+    padding:4px 0;cursor:pointer;transition:var(--transition);
+}
+.demo-trigger i{font-size:9px;transition:var(--transition);}
+.demo-dropdown:hover .demo-trigger i{transform:rotate(180deg);}
+.demo-dropdown-menu{
+    position:absolute;top:calc(100% + 8px);right:0;min-width:150px;
+    background:var(--bg-2);border:2px solid var(--pink);
+    box-shadow:var(--shadow-hard),0 0 12px rgba(255,46,136,.4);
+    padding:6px;opacity:0;visibility:hidden;transform:translateY(-6px);
+    transition:var(--transition);z-index:1001;
+}
+.demo-dropdown:hover .demo-dropdown-menu{opacity:1;visibility:visible;transform:translateY(0);}
+.demo-dropdown-menu a,.demo-dropdown-menu .demo-disabled{
+    display:block;padding:10px 14px;font-size:13px;border-radius:var(--radius);
+    transition:var(--transition);color:var(--text-secondary);
+}
+.demo-dropdown-menu a:hover{background:var(--surface);color:var(--cyan);}
+.demo-dropdown-menu .demo-disabled{opacity:.5;cursor:default;}
+/* 移动端卡牌Demo 子项 */
+.mobile-demo-title{display:block;padding:16px 24px 6px;color:var(--pink);font-size:14px;font-weight:500;border-bottom:1px solid var(--border);}
+.mobile-demo-sub{display:block;padding:12px 24px 12px 40px;border-bottom:1px solid var(--border);color:var(--text-secondary);font-size:15px;transition:var(--transition);}
+a.mobile-demo-sub:hover{color:var(--cyan);background:var(--surface);padding-left:48px;}
+.mobile-demo-disabled{opacity:.5;cursor:default;}
 .mobile-toggle{display:none;background:none;border:2px solid var(--border);color:var(--green);font-size:20px;width:42px;height:42px;border-radius:var(--radius);}
 
 .mobile-menu{display:none;position:fixed;top:72px;left:0;width:100%;background:var(--bg-2);border-bottom:2px solid var(--pink);z-index:999;}
@@ -216,6 +245,15 @@ body::after{
 }
 .section-header p{color:var(--text-secondary);max-width:700px;font-size:16px;}
 
+/* 飘动的板块图标（与子页面 section-icon 风格一致） */
+.section-icon{
+    font-size:52px;line-height:1;margin-bottom:18px;display:inline-block;
+    filter:drop-shadow(0 0 12px rgba(255,46,136,.6));
+    animation:sectionFloat 4s ease-in-out infinite;
+}
+.hero-icon{font-size:44px;margin-bottom:20px;}
+@keyframes sectionFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+
 /* ========== PHILOSOPHY ========== */
 .philosophy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;}
 .philosophy-card{
@@ -264,6 +302,20 @@ body::after{
     text-shadow:0 0 6px rgba(0,255,65,.5);letter-spacing:1px;
 }
 .game-achievement{color:var(--text-secondary);font-size:13px;line-height:1.6;}
+/* 紧凑型卡片：游玩较浅的游戏，两行结构(名字+值) */
+.game-slide.compact{
+    min-width:200px;max-width:200px;
+    padding:16px 16px 18px;gap:6px;
+}
+.game-slide.compact h3{font-size:15px;margin-bottom:2px;}
+.game-slide.compact .game-stat-line{font-size:12px;letter-spacing:.5px;}
+.game-slide.compact::before{top:8px;right:10px;}
+/* 轮播结尾省略号标记 */
+.carousel-end{
+    min-width:80px;display:flex;align-items:center;justify-content:center;
+    color:var(--text-secondary);font-size:22px;letter-spacing:4px;font-weight:700;
+    scroll-snap-align:start;opacity:.5;user-select:none;
+}
 .carousel-arrow{
     position:absolute;top:50%;transform:translateY(-50%);
     width:46px;height:46px;border-radius:var(--radius);
@@ -354,6 +406,7 @@ footer::before{
     .section-header h2{font-size:30px;}
     .carousel-arrow{display:none;}
     .game-slide{min-width:240px;max-width:240px;}
+    .game-slide.compact{min-width:175px;max-width:175px;padding:14px 14px 16px;}
     .orb{display:none;}
 }
 </style>
@@ -375,7 +428,13 @@ footer::before{
 <a href="#experience">游戏经历</a>
 <a href="#deconstruct">游戏拆解</a>
 <a href="#skills">技能工具</a>
-<a href="game.html" class="accent">卡牌Demo</a>
+<div class="demo-dropdown">
+<button class="demo-trigger" type="button">卡牌Demo <i class="fa-solid fa-chevron-down"></i></button>
+<div class="demo-dropdown-menu">
+<a href="game.html">HTML版</a>
+<span class="demo-disabled">Godot版（测试中）</span>
+</div>
+</div>
 </nav>
 <button class="mobile-toggle" id="mobileToggle"><i class="fa-solid fa-bars"></i></button>
 </div>
@@ -386,13 +445,16 @@ footer::before{
 <a href="#experience">游戏经历</a>
 <a href="#deconstruct">游戏拆解</a>
 <a href="#skills">技能工具</a>
-<a href="game.html" style="color:var(--pink);">卡牌Demo</a>
+<span class="mobile-demo-title">卡牌Demo</span>
+<a href="game.html" class="mobile-demo-sub">HTML版</a>
+<span class="mobile-demo-sub mobile-demo-disabled">Godot版（测试中）</span>
 </div>
 
 <!-- HERO -->
 <section class="hero">
 <div class="container hero-container">
 <div class="hero-content">
+<div class="section-icon hero-icon">&#9999;</div>
 <div class="hero-tag">GAME DESIGN PORTFOLIO</div>
 <h1>游戏策划<span>Game Designer</span></h1>
 </div>
@@ -416,6 +478,7 @@ footer::before{
 <section id="experience" class="section">
 <div class="container">
 <div class="section-header hidden">
+<div class="section-icon">&#127918;</div>
 <div class="section-label">EXPERIENCE</div>
 <h2>核心游玩履历</h2>
 </div>
@@ -430,34 +493,77 @@ footer::before{
 </div>
 
 <div class="game-slide">
-<h3>Monster Hunter World</h3>
-<span class="game-stat-line">2200h+</span>
-<span class="game-achievement">全成就完成</span>
-</div>
-
-<div class="game-slide">
-<h3>League of Legends</h3>
-<span class="game-stat-line">3000h+</span>
-<span class="game-achievement">高段位玩家</span>
-</div>
-
-<div class="game-slide">
-<h3>Genshin Impact</h3>
+<h3>杀戮尖塔 1/2</h3>
 <span class="game-stat-line">1000h+</span>
-<span class="game-achievement">长期玩家</span>
+<span class="game-achievement">多角色最高难度SL连胜30+</span>
 </div>
 
 <div class="game-slide">
-<h3>黑神话：悟空</h3>
+<h3>文明6</h3>
 <span class="game-stat-line">200h+</span>
-<span class="game-achievement">全通关</span>
+<span class="game-achievement">50h过最高难度</span>
 </div>
 
 <div class="game-slide">
-<h3>死亡搁浅</h3>
-<span class="game-stat-line">150h+</span>
-<span class="game-achievement">全剧情体验</span>
+<h3>泰拉瑞亚</h3>
+<span class="game-stat-line">500h+</span>
+<span class="game-achievement">多角色及mod版通关</span>
 </div>
+
+<div class="game-slide">
+<h3>英雄联盟手游</h3>
+<span class="game-stat-line">3800场</span>
+<span class="game-achievement">胜率67%</span>
+</div>
+
+<div class="game-slide">
+<h3>蔚蓝</h3>
+<span class="game-stat-line">60h</span>
+<span class="game-achievement">最高难度通关</span>
+</div>
+
+<div class="game-slide">
+<h3>王国保卫战 1-3</h3>
+<span class="game-stat-line">100h+</span>
+<span class="game-achievement">全部等级关卡通关</span>
+</div>
+
+<div class="game-slide compact">
+<h3>星露谷物语</h3>
+<span class="game-stat-line">150h</span>
+</div>
+
+<div class="game-slide compact">
+<h3>欧卡</h3>
+<span class="game-stat-line">30h</span>
+</div>
+
+<div class="game-slide compact">
+<h3>苍翼：混沌效应</h3>
+<span class="game-stat-line">30h</span>
+</div>
+
+<div class="game-slide compact">
+<h3>拳皇13</h3>
+<span class="game-stat-line">25h</span>
+</div>
+
+<div class="game-slide compact">
+<h3>Vampire Survivors</h3>
+<span class="game-stat-line">10h+</span>
+</div>
+
+<div class="game-slide compact">
+<h3>武士零</h3>
+<span class="game-stat-line">10h+</span>
+</div>
+
+<div class="game-slide compact">
+<h3>传送门1/2</h3>
+<span class="game-stat-line">全流程通关</span>
+</div>
+
+<div class="carousel-end" aria-hidden="true">......</div>
 
 </div>
 <button class="carousel-arrow right" id="carouselRight"><i class="fa-solid fa-chevron-right"></i></button>
@@ -469,6 +575,7 @@ footer::before{
 <section id="deconstruct" class="section">
 <div class="container">
 <div class="section-header hidden">
+<div class="section-icon">&#128296;</div>
 <div class="section-label">DECONSTRUCT</div>
 <h2>游戏拆解</h2>
 </div>
@@ -477,13 +584,13 @@ footer::before{
 <a class="decon-card hidden" href="decon-tft-economy.html">
 <span class="decon-tag">Economy</span>
 <h3>云顶之弈经济系统分析</h3>
-<p>金币利息、连胜连败机制如何驱动决策节奏。</p>
+<p>一个好的经济系统是如何让一款19年上线的游戏经久不衰。</p>
 </a>
 
 <a class="decon-card hidden" href="decon-gacha.html">
 <span class="decon-tag">Monetization</span>
-<h3>抽卡机制拆解</h3>
-<p>概率模型、保底设计与资源消耗循环。</p>
+<h3>金铲铲，原神等游戏的抽奖机制分析</h3>
+<p>金铲铲与原神的抽奖概率、保底与付费循环拆解。</p>
 </a>
 
 </div>
@@ -494,19 +601,20 @@ footer::before{
 <section id="skills" class="section">
 <div class="container">
 <div class="section-header hidden">
+<div class="section-icon">&#129520;</div>
 <div class="section-label">SKILLS</div>
 <h2>技能与工具链</h2>
 </div>
 <div class="skill-group hidden">
 <h3>设计能力</h3>
 <div class="badge-list">
-<span class="badge">系统设计</span><span class="badge">数值建模</span><span class="badge">成长系统</span><span class="badge">竞品分析</span><span class="badge">经济系统设计</span><span class="badge">数值平衡</span>
+<span class="badge">系统设计</span><span class="badge">数值建模</span><span class="badge">数值平衡</span><span class="badge">经济系统设计</span><span class="badge">资源循环设计</span><span class="badge">成长系统</span><span class="badge">竞品分析</span>
 </div>
 </div>
 <div class="skill-group hidden">
 <h3>工具链</h3>
 <div class="badge-list">
-<span class="badge">Excel</span><span class="badge">VBA</span><span class="badge">XMind</span><span class="badge">Visio</span><span class="badge">Figma</span><span class="badge">Unity</span><span class="badge">Git</span>
+<span class="badge">Excel</span><span class="badge">VBA</span><span class="badge">Google Sheets</span><span class="badge">Unity</span><span class="badge">Godot</span><span class="badge">Python</span><span class="badge">SQL</span><span style="flex-basis:100%;height:0;margin:0;padding:0;border:none;background:none;"></span><span class="badge">Tableau</span><span class="badge">XMind</span><span class="badge">Visio</span><span class="badge">Git</span>
 </div>
 </div>
 <div class="skill-group hidden">

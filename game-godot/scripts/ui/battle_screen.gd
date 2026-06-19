@@ -1,5 +1,9 @@
 extends Control
 ## BattleScreen - 战斗画面主控脚本
+## 出牌交互（对齐HTML）：
+##   - utility/power/AOE 牌：点击选中（自动选第一个活着的怪）
+##   - 单体攻击牌：拖拽到怪物上才能选中
+##   - 选中后点"确认出牌"执行
 
 var _monster_slots: Array = []
 var _card_uis: Array = []
@@ -8,6 +12,7 @@ var monster_area: CenterContainer
 var card_hand: HBoxContainer
 var action_bar: HBoxContainer
 var turn_hint: Label
+var _drag_system: Control  # DragSystem 节点
 
 func _ready() -> void:
 	print("[BattleScreen] _ready called")
@@ -17,7 +22,37 @@ func _ready() -> void:
 	card_hand = get_node_or_null("CardArea/CardHand")
 	action_bar = get_node_or_null("CardArea/ActionBar")
 	turn_hint = get_node_or_null("CardArea/TurnHint")
-	
+
+	# 给卡牌区域添加深色不透明背景 + 顶部青色横线（对齐HTML .card-area 样式）
+	_add_card_area_background()
+
+	# 把 CardHand 包到 ScrollContainer 中，实现水平滚动（对齐HTML）
+	# 卡牌数量多时可以左右滑动查看，不会挤压下方按钮
+	if card_hand and card_hand.get_parent():
+		var card_area = card_hand.get_parent()
+		var scroll = ScrollContainer.new()
+		scroll.name = "CardScroll"
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		scroll.custom_minimum_size = Vector2(0, 150)
+		var hand_idx = card_hand.get_index()
+		card_area.remove_child(card_hand)
+		scroll.add_child(card_hand)
+		card_area.add_child(scroll)
+		card_area.move_child(scroll, hand_idx)
+		# CardHand 在 ScrollContainer 内不扩展，保持卡牌原始尺寸
+		card_hand.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		card_hand.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
+	# 创建DragSystem子节点（拖拽系统）
+	_drag_system = Control.new()
+	_drag_system.set_script(load("res://scripts/ui/drag_system.gd"))
+	_drag_system.name = "DragSystem"
+	add_child(_drag_system)
+	_drag_system.drag_completed.connect(_on_drag_completed)
+
 	# 连接EventBus
 	EventBus.combat_won.connect(_on_combat_won)
 	EventBus.combat_lost.connect(_on_combat_lost)
@@ -29,7 +64,7 @@ func _ready() -> void:
 	EventBus.campfire_entered.connect(_on_campfire_entered)
 	EventBus.sacrifice_entered.connect(_on_sacrifice_entered)
 	EventBus.victory.connect(_on_victory)
-	
+
 	# 连接ActionBar信号
 	if action_bar:
 		action_bar.confirm_pressed.connect(_on_confirm_pressed)
@@ -42,7 +77,47 @@ func _ready() -> void:
 func _on_game_started() -> void:
 	print("[BattleScreen] _on_game_started called, state empty: %s" % GameManager.state.is_empty())
 	visible = true
+	# 进入战斗BGM（refresh_all会根据是否BOSS切换为boss BGM）
+	EventBus.bgm_requested.emit("battle")
 	refresh_all()
+
+## 给卡牌区域添加深色不透明背景 + 顶部青色横线（对齐HTML .card-area 样式）
+## 背景插入到 CardArea 之前，不阻挡鼠标事件
+func _add_card_area_background() -> void:
+	var card_area = get_node_or_null("CardArea")
+	if not card_area:
+		return
+	# 避免重复添加
+	if has_node("CardAreaBg"):
+		return
+
+	# 深色不透明背景
+	var bg = ColorRect.new()
+	bg.name = "CardAreaBg"
+	bg.color = Color(0.05, 0.01, 0.13, 1)  # #0d0221 深紫黑色，完全不透明
+	bg.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	bg.anchor_top = 1.0
+	bg.anchor_right = 1.0
+	bg.anchor_bottom = 1.0
+	bg.offset_top = -230.0
+	bg.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bg.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 插入到 CardArea 之前（这样 CardArea 显示在背景之上）
+	var card_area_idx = card_area.get_index()
+	add_child(bg)
+	move_child(bg, card_area_idx)
+
+	# 顶部青色横线（2px）
+	var line = ColorRect.new()
+	line.name = "CardAreaLine"
+	line.color = Color(0, 0.94, 1, 1)  # #00f0ff 青色
+	line.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	line.anchor_right = 1.0
+	line.offset_bottom = 2.0
+	line.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.add_child(line)
 
 func refresh_all() -> void:
 	if GameManager.state.is_empty():
@@ -50,6 +125,13 @@ func refresh_all() -> void:
 		return
 	print("[BattleScreen] refresh_all: monsters=%d, deck=%d" % [GameManager.state.get("monsters", []).size(), GameManager.state["player"]["deck"].size()])
 	print("[BattleScreen] nodes: top_bar=%s monster_area=%s card_hand=%s action_bar=%s turn_hint=%s" % [top_bar != null, monster_area != null, card_hand != null, action_bar != null, turn_hint != null])
+	# BGM切换：有BOSS时播放boss BGM，否则播放battle BGM（SoundManager会跳过相同BGM）
+	var has_boss = false
+	for m in GameManager.state.get("monsters", []):
+		if m.get("is_boss", false):
+			has_boss = true
+			break
+	EventBus.bgm_requested.emit("boss" if has_boss else "battle")
 	_refresh_top_bar()
 	_refresh_monsters()
 	_refresh_cards()
@@ -121,7 +203,7 @@ func _refresh_cards() -> void:
 func _create_card_ui(data: Dictionary, can_play: bool) -> Panel:
 	var card = Panel.new()
 	card.set_script(load("res://scripts/ui/card_ui.gd"))
-	card.custom_minimum_size = Vector2(112, 150)
+	card.custom_minimum_size = Vector2(96, 140)
 
 	# 用 VBoxContainer 布局，避免标签全部堆在左上角
 	var vbox = VBoxContainer.new()
@@ -197,81 +279,84 @@ func _refresh_actions() -> void:
 	if not action_bar or not action_bar.has_method("update_for_selection"):
 		push_warning("[BattleScreen] action_bar issue: %s" % action_bar)
 		return
-	
+
 	var phase = GameManager.state.get("phase", "battle")
 	var has_selection = GameManager.state.get("selection") != null
-	print("[BattleScreen] _refresh_actions: phase=%s, has_selection=%s" % [phase, has_selection])
 	action_bar.update_for_selection(has_selection, phase)
-	
+
 	if turn_hint:
 		if phase == "sacrifice":
 			var count = GameManager.state.get("sacrifice_selected", []).size()
 			turn_hint.text = "选择献祭卡牌 (%d/2)" % count
 		else:
-			var s = GameManager.state
-			var played = s["player"].get("played_count", 0)
-			var max_plays = 1 + s["player"].get("extra_plays", 0)
-			turn_hint.text = "出牌 (%d/%d)" % [played, max_plays]
+			# 显示能量（对齐HTML：⚡energy/maxEnergy）
+			var p = GameManager.state["player"]
+			var energy = p.get("energy", 0)
+			var max_energy = p.get("max_energy", 2)
+			turn_hint.text = "出牌 (⚡%d/%d)" % [energy, max_energy]
 
 # === 交互回调 ===
 
+## 点击卡牌（仅 utility/power/AOE 牌会触发）
 func _on_card_clicked(card_id: int) -> void:
 	if GameManager.state.get("animating", false):
 		return
-	
+	if _drag_system and _drag_system.is_dragging():
+		return
+
 	var phase = GameManager.state.get("phase", "battle")
 	var card = GameManager._find_card(card_id)
 	if card.is_empty():
 		return
-	
+
 	# 献祭模式
 	if phase == "sacrifice":
 		_toggle_sacrifice_card(card_id)
 		return
-	
+
 	if not GameManager.can_play_card(card):
 		return
-	
-	# 点击攻击牌 → 选择第一个活着的怪
-	var card_type = card.get("type", "")
-	if card_type == "attack" and not card.get("aoe", false):
-		# 攻击牌需要指定目标，如果已有选中且目标相同则取消
-		if GameManager.state.get("selection") and GameManager.state["selection"]["card_id"] == card_id:
-			GameManager.state["selection"] = null
-		else:
-			var target_idx = _find_first_alive_monster()
-			if target_idx >= 0:
-				GameManager.state["selection"] = {"card_id": card_id, "target_idx": target_idx}
-	elif card_type in ["utility", "power"] or card.get("aoe", false):
-		# 非攻击/AOE牌自动选第一个怪
-		if GameManager.state.get("selection") and GameManager.state["selection"]["card_id"] == card_id:
-			GameManager.state["selection"] = null
-		else:
-			var target_idx = _find_first_alive_monster()
-			if target_idx >= 0:
-				GameManager.state["selection"] = {"card_id": card_id, "target_idx": target_idx}
+
+	# 点击选中：切换选中状态，自动选第一个活着的怪作为目标
+	if GameManager.state.get("selection") and GameManager.state["selection"]["card_id"] == card_id:
+		GameManager.state["selection"] = null
+	else:
+		var target_idx = _find_first_alive_monster()
+		if target_idx >= 0:
+			GameManager.state["selection"] = {"card_id": card_id, "target_idx": target_idx}
 	refresh_all()
 
-func _on_card_drag_started(card_id: int, _event: InputEvent) -> void:
+## 拖拽开始（单体攻击牌拖拽到怪物）
+func _on_card_drag_started(card_id: int) -> void:
+	if GameManager.state.get("animating", false):
+		return
 	var card = GameManager._find_card(card_id)
 	if card.is_empty() or not GameManager.can_play_card(card):
 		return
-	var target_idx = _find_first_alive_monster()
-	if target_idx >= 0:
-		GameManager.state["selection"] = {"card_id": card_id, "target_idx": target_idx}
+	# 启动DragSystem
+	_drag_system.start_drag(card_id, card, _monster_slots)
 	refresh_all()
 
+## 拖拽完成（DragSystem回调）
+func _on_drag_completed(card_id: int, target_idx: int) -> void:
+	if target_idx >= 0:
+		# 拖到怪物上 → 设置selection
+		GameManager.state["selection"] = {"card_id": card_id, "target_idx": target_idx}
+	else:
+		# 没拖到怪物 → 取消selection
+		GameManager.state["selection"] = null
+	refresh_all()
+
+## 点击怪物（保留：可切换攻击牌目标，辅助操作）
 func _on_monster_clicked(slot_idx: int) -> void:
-	# 点击怪物 → 如果已有选中的攻击牌，更新目标
 	var sel = GameManager.state.get("selection")
 	if sel == null:
 		return
 	var card = GameManager._find_card(sel["card_id"])
 	if card.is_empty():
 		return
-	var card_type = card.get("type", "")
 	# 攻击牌可以切换目标
-	if card_type == "attack" and not card.get("aoe", false):
+	if card.get("type") == "attack" and not card.get("aoe", false):
 		sel["target_idx"] = slot_idx
 		refresh_all()
 
@@ -310,7 +395,7 @@ func _confirm_sacrifice() -> void:
 	if selected.size() < 2:
 		return
 	GameManager.perform_sacrifice(selected)
-	EventBus.sfx_requested.emit("ui_click")
+	# ui_click音效已在ActionBar确认按钮中触发
 	EventBus.reward_shown.emit(true, false)
 
 func _cancel_sacrifice() -> void:
@@ -343,7 +428,8 @@ func _on_confirm_pressed() -> void:
 		return
 	
 	_play_card_events(events, card)
-	EventBus.sfx_requested.emit("attack" if card.get("damage", 0) > 0 else "defend")
+	# 出牌音效已在 GameManager.play_card 中触发（card_play）
+	# 攻击命中/格挡等音效在 _play_card_events 中按事件触发
 
 func _on_cancel_pressed() -> void:
 	var phase = GameManager.state.get("phase", "battle")
@@ -375,10 +461,124 @@ func _on_blank_convert_pressed() -> void:
 		return
 	EventBus.reward_shown.emit(false, true)
 
-## "?" 按钮：在画面顶部弹出一段简短玩法提示，3 秒后自动消失。
+## "?" 按钮：显示完整玩法说明弹窗（对齐HTML helpModal）
 func _on_help_pressed() -> void:
-	EventBus.sfx_requested.emit("ui_click")
-	_show_hint("点击卡牌选中 → 点怪物改目标 → 回车/确认出牌 → 空格结束回合", 3.0)
+	# ui_click音效已在ActionBar按钮中触发
+	_show_help_modal()
+
+## 玩法说明弹窗（对齐HTML helpModal内容）
+func _show_help_modal() -> void:
+	# 避免重复打开
+	if has_node("HelpModalOverlay"):
+		return
+
+	# 半透明背景遮罩
+	var overlay = ColorRect.new()
+	overlay.name = "HelpModalOverlay"
+	overlay.color = Color(0, 0, 0, 0.7)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+
+	# 弹窗面板
+	var panel = PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(560, 480)
+	panel.position = -panel.custom_minimum_size / 2
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.08, 0.04, 0.18, 0.96)
+	panel_style.border_color = Color(0, 0.94, 1, 1)
+	panel_style.border_width_bottom = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_left = 2
+	panel_style.border_width_right = 2
+	panel_style.content_margin_top = 16
+	panel_style.content_margin_bottom = 16
+	panel_style.content_margin_left = 20
+	panel_style.content_margin_right = 20
+	panel.add_theme_stylebox_override("panel", panel_style)
+	overlay.add_child(panel)
+
+	# 内容 VBox
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	panel.add_child(vbox)
+
+	# 标题
+	var title = Label.new()
+	title.text = "玩法说明"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color(0, 0.94, 1, 1))
+	vbox.add_child(title)
+
+	# 滚动内容区
+	var scroll = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(scroll)
+
+	var content = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 6)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(content)
+
+	# 玩法说明内容（对齐HTML）
+	var sections = [
+		["基础规则", "每回合2点能量，拖动卡牌到怪物身上出牌，确认后自动结束回合。"],
+		["卡牌类型", "攻击 — 造成伤害（含AOE、吸血等）\n防御 — 获得格挡\n能力 — 永久效果（打出后移除）\n特殊 — 空白牌"],
+		["能量", "每回合恢复2点能量，每张牌消耗对应能量（卡牌左上角⚡数字）"],
+		["群怪", "每第3场战斗为群怪，AOE对全体生效"],
+		["出牌", "拖动卡牌到怪物 → 显示预览伤害 → 点击确认 → 自动结束回合\n重新拖动另一张牌取消上次选择"],
+		["火堆", "每3层后出现：恢复20HP / 3场战斗+3力量"],
+		["献祭", "选2张剩余次数≥3的牌献祭，3选1新牌"],
+		["特殊牌", "空白牌 — 2张兑换2次卡牌奖励，额外+1永久力量"],
+		["延迟奖励", "战斗胜利后可选择代替卡牌：每回合开始+2格挡 或 +1永久力量"],
+		["能力牌", "每张牌每关使用一次，可抓多张叠加效果\n盾反 — 回合结束对随机敌人造成格挡一半的伤害\n露出獠牙 — 每次造成伤害获得1点力量\n吸欧气 — 骰子1-3概率降低，4-6概率增加(多张叠加)"],
+		["X费牌", "旋斩 — 消耗全部能量，对全体造成4×X伤害(X=消耗能量)"],
+		["骰子牌", "骰子 — 1费，掷骰子1-6：\n①力量+1 ②每回合+2防御 ③随机敌人2连击 ④加4血下次攻击+6 ⑤随机敌人中毒5/回合 ⑥对全体造成6×2伤害+6防御"],
+		["特殊攻击", "渴血 — 2费，造成10伤害，力量≥5时回复实际造成的伤害"],
+		["新增技能牌", "播毒 — 1费，对所有敌人造成3/回合中毒，5次\n荆棘护甲 — 1费，获得4格挡，本关受击反伤4（可叠加），5次\n命运轮盘 — 1费，掷骰：奇数对随机敌人造成3×点数伤害；偶数获得点数×2格挡，5次（不受吸欧气影响）"],
+	]
+
+	for section in sections:
+		var header = Label.new()
+		header.text = section[0]
+		header.add_theme_font_size_override("font_size", 12)
+		header.add_theme_color_override("font_color", Color(0, 1, 0.25, 1))
+		content.add_child(header)
+
+		var body = Label.new()
+		body.text = section[1]
+		body.add_theme_font_size_override("font_size", 11)
+		body.add_theme_color_override("font_color", Color(0.7, 0.65, 0.85, 1))
+		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		content.add_child(body)
+
+	# 关闭按钮
+	var close_btn = Button.new()
+	close_btn.text = "关闭"
+	close_btn.custom_minimum_size = Vector2(100, 32)
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0, 0.94, 1, 0.15)
+	btn_style.border_color = Color(0, 0.94, 1, 1)
+	btn_style.border_width_bottom = 2
+	btn_style.border_width_top = 2
+	btn_style.border_width_left = 2
+	btn_style.border_width_right = 2
+	btn_style.content_margin_top = 6
+	btn_style.content_margin_bottom = 6
+	btn_style.content_margin_left = 20
+	btn_style.content_margin_right = 20
+	close_btn.add_theme_stylebox_override("normal", btn_style)
+	close_btn.add_theme_color_override("font_color", Color(0, 0.94, 1, 1))
+	close_btn.pressed.connect(_close_help_modal.bind(overlay))
+	vbox.add_child(close_btn)
+
+## 关闭玩法说明弹窗
+func _close_help_modal(overlay: ColorRect) -> void:
+	overlay.queue_free()
 
 ## 顶部临时提示（不依赖 turn_hint，避免被 refresh 覆盖）。
 func _show_hint(text: String, duration: float = 2.5) -> void:
@@ -403,6 +603,8 @@ func _show_hint(text: String, duration: float = 2.5) -> void:
 
 func _play_card_events(events: Array, card: Dictionary) -> void:
 	var delay = 0.0
+	# AOE卡牌用重击音效，单体用命中音效
+	var hit_sfx = "attack_heavy" if card.get("aoe", false) else "attack_hit"
 	for e in events:
 		match e.get("type"):
 			"dmg":
@@ -410,6 +612,7 @@ func _play_card_events(events: Array, card: Dictionary) -> void:
 				_delayed_action(delay, func():
 					if idx < _monster_slots.size():
 						_monster_slots[idx].play_hit_animation(e["value"])
+					EventBus.sfx_requested.emit(hit_sfx)
 				)
 				delay += 0.15
 			"kill":
@@ -417,7 +620,7 @@ func _play_card_events(events: Array, card: Dictionary) -> void:
 				_delayed_action(delay, func():
 					if idx < _monster_slots.size():
 						_monster_slots[idx].play_death_animation()
-					EventBus.sfx_requested.emit("kill")
+					EventBus.sfx_requested.emit("monster_die")
 				)
 				delay += 0.1
 			"heal":
@@ -427,7 +630,7 @@ func _play_card_events(events: Array, card: Dictionary) -> void:
 				delay += 0.1
 			"block":
 				_delayed_action(delay, func():
-					EventBus.sfx_requested.emit("defend")
+					EventBus.sfx_requested.emit("block")
 				)
 				delay += 0.1
 			"self_dmg":
@@ -437,9 +640,7 @@ func _play_card_events(events: Array, card: Dictionary) -> void:
 				)
 				delay += 0.1
 			"buff":
-				_delayed_action(delay, func():
-					EventBus.sfx_requested.emit("heal")
-				)
+				# 增益音效已在各效果脚本中触发（如 strength_effect.gd）
 				delay += 0.1
 			"double_hit":
 				# 连劈标记，仅视觉反馈
@@ -448,34 +649,58 @@ func _play_card_events(events: Array, card: Dictionary) -> void:
 	_delayed_action(delay + 0.25, func():
 		GameManager.state["animating"] = false
 		refresh_all()
-		
+
 		if GameManager.state["player"]["hp"] <= 0:
 			GameManager.save_high_score()
 			EventBus.combat_lost.emit(GameManager.state["floor"])
 			return
-		
+
 		if GameManager.check_combat_win():
 			EventBus.combat_won.emit()
 			return
-		
-		var max_plays = 1 + GameManager.state["player"].get("extra_plays", 0)
-		if GameManager.state["player"]["played_count"] >= max_plays:
+
+		# 检查是否还能出牌（基于能量）
+		var can_play_more = GameManager.state["player"]["energy"] > 0 and GameManager.state["player"]["deck"].any(func(c): return GameManager.can_play_card(c))
+		if not can_play_more:
 			_do_monster_turn()
+		# 否则继续出牌，不进入怪物回合
 	)
 
 func _do_monster_turn() -> void:
 	GameManager.state["animating"] = true
+	# 流程对齐HTML：1.end_turn(恢复能量+盾反) → 2.monster_turn → 3.start_turn(清格挡)
+	var shield_events = GameManager.end_turn()
 	var events = GameManager.monster_turn()
-	GameManager.end_turn()
-	
+
 	var delay = 0.0
+	# 播放盾反事件
+	for e in shield_events:
+		match e.get("type"):
+			"dmg":
+				var idx = e["idx"]
+				_delayed_action(delay, func():
+					if idx < _monster_slots.size():
+						_monster_slots[idx].play_hit_animation(e["value"])
+					EventBus.sfx_requested.emit("attack_hit")
+				)
+				delay += 0.15
+			"kill":
+				var idx = e["idx"]
+				_delayed_action(delay, func():
+					if idx < _monster_slots.size():
+						_monster_slots[idx].play_death_animation()
+					EventBus.sfx_requested.emit("monster_die")
+				)
+				delay += 0.1
+
+	# 播放怪物行动事件
 	for e in events:
 		match e.get("type"):
 			"monster_atk":
 				_delayed_action(delay, func():
 					if top_bar and top_bar.has_method("flash_hit"):
 						top_bar.flash_hit()
-					EventBus.sfx_requested.emit("hit")
+					EventBus.sfx_requested.emit("player_hurt")
 				)
 				delay += 0.15
 			"debuff":
@@ -485,11 +710,12 @@ func _do_monster_turn() -> void:
 				delay += 0.1
 			"monster_def":
 				_delayed_action(delay, func():
-					EventBus.sfx_requested.emit("defend")
+					EventBus.sfx_requested.emit("block")
 				)
 				delay += 0.1
-	
+
 	_delayed_action(delay + 0.2, func():
+		GameManager.start_turn()  # 清格挡、应用延迟奖励
 		GameManager.state["animating"] = false
 		refresh_all()
 		if GameManager.state["player"]["hp"] <= 0:
@@ -558,3 +784,17 @@ func _input(event: InputEvent) -> void:
 			_on_cancel_pressed()
 		elif event.keycode == KEY_SPACE:
 			_on_skip_turn()
+		elif event.keycode == KEY_K:
+			# 调试：秒杀所有活着的怪物（方便测试）
+			_debug_kill_all_monsters()
+
+## 调试：秒杀所有活着的怪物
+func _debug_kill_all_monsters() -> void:
+	if GameManager.state.get("phase") != "battle":
+		return
+	for m in GameManager.state.get("monsters", []):
+		m["current_hp"] = 0
+	print("[BattleScreen] DEBUG: killed all monsters")
+	refresh_all()
+	if GameManager.check_combat_win():
+		EventBus.combat_won.emit()

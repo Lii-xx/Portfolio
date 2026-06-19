@@ -2,11 +2,13 @@
   "id": "war_cry",
   "name": "战意",
   "type": "attack",
+  "cost": 1,
   "damage": 8,
   "block": 0,
   "max_uses": 4,
   "aoe": false,
-  "desc": "造成8伤害，本场战斗+4力量",
+  "desc": "造成8伤害，本场战斗+3力量",
   "special": "strength",
-  "sprite": null
+  "sprite": null,
+  "art": ""
 }

@@ -2,11 +2,13 @@
   "id": "vampiric",
   "name": "吸血斩",
   "type": "attack",
-  "damage": 10,
+  "cost": 1,
+  "damage": 8,
   "block": 0,
   "max_uses": 4,
   "aoe": false,
-  "desc": "造成10伤害，回复3生命",
+  "desc": "造成8伤害，回复造成伤害的一半生命",
   "special": "lifesteal",
-  "sprite": null
+  "sprite": null,
+  "art": ""
 }

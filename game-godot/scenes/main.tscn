@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/backgrounds/battle_bg.png" id="1"]
 [ext_resource type="Shader" path="res://shaders/crt_scanlines.gdshader" id="2"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/ui/campfire_screen.gd" id="7"]
 [ext_resource type="Script" path="res://scripts/ui/reward_modal.gd" id="8"]
 [ext_resource type="Script" path="res://scripts/ui/end_screen.gd" id="9"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="10"]
 
 [sub_resource id="1" type="ShaderMaterial"]
 shader = ExtResource("2")
@@ -20,6 +21,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("10")
 
 [node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
@@ -129,10 +131,11 @@ script = ExtResource("5")
 
 [node name="MonsterArea" type="CenterContainer" parent="BattleScreen"]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
+anchor_bottom = 1.0
 offset_top = 50.0
-offset_bottom = -160.0
+offset_bottom = -250.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -142,21 +145,24 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -150.0
+offset_top = -230.0
 grow_horizontal = 2
 grow_vertical = 0
 
 [node name="CardHand" type="HBoxContainer" parent="BattleScreen/CardArea"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 0
 
 [node name="ActionBar" type="HBoxContainer" parent="BattleScreen/CardArea"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 8
 script = ExtResource("6")
 
 [node name="TurnHint" type="Label" parent="BattleScreen/CardArea"]
 layout_mode = 2
+size_flags_vertical = 8
 text = "出牌 (0/1)"
 horizontal_alignment = 1
 

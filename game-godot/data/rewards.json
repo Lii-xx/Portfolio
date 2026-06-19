@@ -1,6 +1,6 @@
 {
-  "special_cards": ["blank", "instant_kill"],
+  "special_cards": ["blank"],
   "special_prob": 0.10,
-  "normal_cards": ["cleave", "iron_wall", "dual", "war_cry", "vampiric", "combo_slash", "replay", "iron_shield", "eternal_str"],
+  "normal_cards": ["cleave", "iron_wall", "dual", "war_cry", "vampiric", "combo_slash", "replay", "iron_shield", "shield_counter", "show_fangs", "spin", "dice", "poison_spread", "thorn_armor", "fate_wheel", "bloodthirst", "lucky_draw"],
   "reward_count": 3
 }

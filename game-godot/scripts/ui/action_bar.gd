@@ -28,12 +28,12 @@ func _init_buttons() -> void:
 	blank_btn = _make_btn("兑换空白牌", "small")
 	help_btn = _make_btn("?", "small")
 	
-	confirm_btn.pressed.connect(func(): confirm_pressed.emit())
-	cancel_btn.pressed.connect(func(): cancel_pressed.emit())
-	skip_btn.pressed.connect(func(): skip_turn_pressed.emit())
-	sacrifice_btn.pressed.connect(func(): sacrifice_pressed.emit())
-	blank_btn.pressed.connect(func(): blank_convert_pressed.emit())
-	help_btn.pressed.connect(func(): help_pressed.emit())
+	confirm_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); confirm_pressed.emit())
+	cancel_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); cancel_pressed.emit())
+	skip_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); skip_turn_pressed.emit())
+	sacrifice_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); sacrifice_pressed.emit())
+	blank_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); blank_convert_pressed.emit())
+	help_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); help_pressed.emit())
 
 func update_for_selection(has_selection: bool, phase: String = "battle") -> void:
 	for child in get_children():
@@ -45,11 +45,13 @@ func update_for_selection(has_selection: bool, phase: String = "battle") -> void
 		confirm_btn.disabled = sacrifice_count < 2
 		add_child(confirm_btn)
 		add_child(cancel_btn)
+		add_child(help_btn)
 		return
-	
+
 	if has_selection:
 		add_child(confirm_btn)
 		add_child(cancel_btn)
+		add_child(help_btn)
 	else:
 		add_child(skip_btn)
 		

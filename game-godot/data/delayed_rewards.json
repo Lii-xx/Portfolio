@@ -1,20 +1,20 @@
 {
   "rewards": [
     {
-      "id": "hp",
-      "icon": "❤️",
-      "name": "+5 最大生命",
-      "desc": "提升生命上限",
-      "type": "max_hp",
-      "value": 5
+      "id": "block",
+      "icon": "🛡️",
+      "name": "每回合+2格挡",
+      "desc": "每回合开始获得2格挡",
+      "type": "delayed_block_buff",
+      "value": 2
     },
     {
       "id": "str",
       "icon": "💪",
-      "name": "+2 永久力量",
-      "desc": "所有攻击伤害+2",
+      "name": "+1 永久力量",
+      "desc": "所有攻击伤害+1",
       "type": "perm_strength",
-      "value": 2
+      "value": 1
     }
   ]
 }

@@ -1,0 +1,7 @@
+此目录存放BGM背景音乐文件（.ogg格式）。
+T1阶段为空，T2阶段用户需放入以下文件：
+- title.ogg   标题页
+- battle.ogg  普通战斗
+- boss.ogg    BOSS战
+- campfire.ogg 火堆
+- victory.ogg 通关

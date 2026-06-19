@@ -12,11 +12,11 @@
     {
       "id": "str",
       "icon": "💪",
-      "name": "力量加持 (+5力量 / 3场)",
-      "desc": "接下来3场战斗，每场+5力量",
+      "name": "力量加持 (+3力量 / 3场)",
+      "desc": "接下来3场战斗，每场+3力量",
       "type": "campfire_str",
       "value": 3,
-      "__note": "type=campfire_str 时 value=持续战斗场数；力量加成固定为 GameManager.get_strength() 里的 +5，改加成值需改 game_manager.gd"
+      "__note": "type=campfire_str 时 value=持续战斗场数；力量加成固定为 GameManager.CAMPFIRE_STR_BONUS（当前+3），改加成值需改 game_manager.gd"
     }
   ]
 }

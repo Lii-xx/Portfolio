@@ -28,6 +28,7 @@ func make_card(id: String) -> Dictionary:
 		"def_key": id,
 		"name": def.get("name", "???"),
 		"type": def.get("type", "attack"),
+		"cost": def.get("cost", 0),
 		"damage": def.get("damage", 0),
 		"block": def.get("block", 0),
 		"max_uses": def.get("max_uses", 0),

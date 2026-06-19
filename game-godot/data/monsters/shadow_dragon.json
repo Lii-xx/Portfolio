@@ -8,7 +8,7 @@
     {"type": "attack", "value": 12, "debuff": null},
     {"type": "defend", "value": 10, "debuff": null},
     {"type": "attack", "value": 15, "debuff": null},
-    {"type": "debuff", "value": 0, "debuff": "no_attack"},
+    {"type": "debuff", "value": 0, "debuff": "no_defense"},
     {"type": "attack", "value": 18, "debuff": null}
   ]
 }
