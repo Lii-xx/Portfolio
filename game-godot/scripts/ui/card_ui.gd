@@ -188,6 +188,11 @@ func set_selected(selected: bool) -> void:
 	is_selected = selected
 	TweenHelpers.card_selected(self, selected)
 
+## 出牌飞行动画（由 battle_screen 在确认出牌时调用）
+## 动画结束后卡牌会被 refresh_all 重建清除，无需自己 queue_free
+func play_card_animation(target_pos: Vector2) -> void:
+	TweenHelpers.card_play_to_target(self, target_pos)
+
 ## 更新为献祭选中样式
 func set_sacrifice_selected(selected: bool) -> void:
 	var style: StyleBoxFlat

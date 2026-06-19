@@ -13,6 +13,7 @@ var card_hand: HBoxContainer
 var action_bar: HBoxContainer
 var turn_hint: Label
 var _drag_system: Control  # DragSystem 节点
+var _prev_energy: int = -1  # 记录上一次能量值，用于检测能量减少触发跳动
 
 func _ready() -> void:
 	print("[BattleScreen] _ready called")
@@ -294,6 +295,10 @@ func _refresh_actions() -> void:
 			var energy = p.get("energy", 0)
 			var max_energy = p.get("max_energy", 2)
 			turn_hint.text = "出牌 (⚡%d/%d)" % [energy, max_energy]
+			# 能量减少时触发跳动
+			if _prev_energy >= 0 and energy < _prev_energy:
+				TweenHelpers.energy_spend(turn_hint)
+			_prev_energy = energy
 
 # === 交互回调 ===
 
@@ -426,6 +431,20 @@ func _on_confirm_pressed() -> void:
 		GameManager.state["animating"] = false
 		refresh_all()
 		return
+	
+	# 出牌飞行动画：找到对应 card_ui，飞向目标怪物槽位
+	var played_animation = false
+	for card_ui in _card_uis:
+		if card_ui.card_data.get("id") == card_id:
+			if target_idx >= 0 and target_idx < _monster_slots.size():
+				var target_pos = _monster_slots[target_idx].global_position + Vector2(60, 90)
+				card_ui.play_card_animation(target_pos)
+				played_animation = true
+			break
+	
+	# 等待飞行动画播完再播放战斗事件（避免 refresh_all 重建打断动画）
+	if played_animation:
+		await get_tree().create_timer(0.4).timeout
 	
 	_play_card_events(events, card)
 	# 出牌音效已在 GameManager.play_card 中触发（card_play）
@@ -602,6 +621,9 @@ func _show_hint(text: String, duration: float = 2.5) -> void:
 	tween.tween_callback(label.queue_free)
 
 func _play_card_events(events: Array, card: Dictionary) -> void:
+	# AOE/重击 → 屏幕震动
+	if card.get("aoe", false):
+		TweenHelpers.screen_shake(self, 10.0, 0.3)
 	var delay = 0.0
 	# AOE卡牌用重击音效，单体用命中音效
 	var hit_sfx = "attack_heavy" if card.get("aoe", false) else "attack_hit"
@@ -700,9 +722,36 @@ func _do_monster_turn() -> void:
 				_delayed_action(delay, func():
 					if top_bar and top_bar.has_method("flash_hit"):
 						top_bar.flash_hit()
+					TweenHelpers.screen_shake(self, 6.0, 0.2)
 					EventBus.sfx_requested.emit("player_hurt")
 				)
 				delay += 0.15
+			"thorn_dmg":
+				var idx = e["idx"]
+				var val = e["value"]
+				_delayed_action(delay, func():
+					if idx < _monster_slots.size():
+						_monster_slots[idx].play_hit_animation(val)
+					EventBus.sfx_requested.emit("attack_hit")
+				)
+				delay += 0.15
+			"poison_dmg":
+				var idx = e["idx"]
+				var val = e["value"]
+				_delayed_action(delay, func():
+					if idx < _monster_slots.size():
+						_monster_slots[idx].play_hit_animation(val)
+					EventBus.sfx_requested.emit("poison")
+				)
+				delay += 0.15
+			"kill":
+				var idx = e["idx"]
+				_delayed_action(delay, func():
+					if idx < _monster_slots.size():
+						_monster_slots[idx].play_death_animation()
+					EventBus.sfx_requested.emit("monster_die")
+				)
+				delay += 0.1
 			"debuff":
 				_delayed_action(delay, func():
 					EventBus.sfx_requested.emit("debuff")
@@ -721,6 +770,9 @@ func _do_monster_turn() -> void:
 		if GameManager.state["player"]["hp"] <= 0:
 			GameManager.save_high_score()
 			EventBus.combat_lost.emit(GameManager.state["floor"])
+			return
+		if GameManager.check_combat_win():
+			EventBus.combat_won.emit()
 	)
 
 func _delayed_action(delay: float, action: Callable) -> void:

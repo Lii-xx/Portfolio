@@ -16,7 +16,7 @@ static func card_selected(card: Control, is_selected: bool) -> void:
 	tween.tween_property(card, "scale", target_scale, 0.12).set_ease(Tween.EASE_OUT)
 	tween.tween_property(card, "position:y", card.position.y + target_y, 0.12).set_ease(Tween.EASE_OUT)
 
-## 怪物受击抖动
+## 怪物受击抖动（闪白已由 T5 hit_flash 着色器接管，这里只保留抖动）
 static func monster_hit_shake(node: Control) -> void:
 	var orig_x = node.position.x
 	var tween = node.create_tween()
@@ -24,10 +24,6 @@ static func monster_hit_shake(node: Control) -> void:
 	tween.tween_property(node, "position:x", orig_x - 8, 0.04).set_trans(Tween.TRANS_LINEAR)
 	tween.tween_property(node, "position:x", orig_x + 4, 0.04).set_trans(Tween.TRANS_LINEAR)
 	tween.tween_property(node, "position:x", orig_x, 0.04).set_trans(Tween.TRANS_LINEAR)
-	# 闪白
-	var tween2 = node.create_tween()
-	tween2.tween_property(node, "modulate", Color(2, 2, 2, 1), 0.06)
-	tween2.tween_property(node, "modulate", Color(1, 1, 1, 1), 0.09)
 
 ## 伤害飘字
 static func damage_popup(parent: Control, value: int, is_heal: bool = false) -> void:
@@ -68,3 +64,30 @@ static func button_step_hover(btn: Button, is_hover: bool) -> void:
 	var offset = Vector2(-2, -2) if is_hover else Vector2(0, 0)
 	var tween = btn.create_tween()
 	tween.tween_property(btn, "position", btn.position + offset, 0.05).set_trans(Tween.TRANS_LINEAR)
+
+## 卡牌出场（从手牌飞向目标后缩小消失）
+static func card_play_to_target(card: Control, target_pos: Vector2) -> void:
+	var tween = card.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(card, "global_position", target_pos, 0.25).set_ease(Tween.EASE_IN)
+	tween.tween_property(card, "scale", Vector2(1.2, 1.2), 0.25)
+	tween.chain().tween_property(card, "scale", Vector2(0, 0), 0.15)
+	# 动画末尾隐藏，避免 refresh_all 重建前的闪烁
+	tween.tween_callback(func(): card.visible = false)
+
+## 屏幕震动（重击/AOE/玩家受伤）
+static func screen_shake(node: Control, intensity: float = 8.0, duration: float = 0.3) -> void:
+	var orig_pos = node.position
+	var tween = node.create_tween()
+	for i in range(4):
+		var offset = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		tween.tween_property(node, "position", orig_pos + offset, duration / 4)
+	tween.tween_property(node, "position", orig_pos, 0.05)
+
+## 能量消耗动画（能量数字跳动）
+static func energy_spend(label: Label) -> void:
+	# 设置中心锚点，避免从左上角缩放
+	label.pivot_offset = label.size / 2
+	var tween = label.create_tween()
+	tween.tween_property(label, "scale", Vector2(1.5, 1.5), 0.1)
+	tween.tween_property(label, "scale", Vector2(1.0, 1.0), 0.2)
