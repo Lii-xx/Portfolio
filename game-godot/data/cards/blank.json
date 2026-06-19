@@ -7,7 +7,7 @@
   "block": 0,
   "max_uses": 0,
   "aoe": false,
-  "desc": "每2张兑换2次卡牌奖励",
+  "desc": "每2张兑换2次卡牌奖励，额外+1永久力量",
   "special": "blank",
   "sprite": null,
   "art": ""

@@ -6,7 +6,7 @@
   "sprite_idx": 0,
   "intents": [
     {"type": "attack", "value": 4, "debuff": null},
-    {"type": "attack", "value": 6, "debuff": null},
-    {"type": "attack", "value": 8, "debuff": null}
+    {"type": "attack", "value": 5, "debuff": null},
+    {"type": "attack", "value": 6, "debuff": null}
   ]
 }

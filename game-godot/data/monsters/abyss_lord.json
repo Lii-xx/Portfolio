@@ -10,6 +10,6 @@
     {"type": "attack", "value": 14, "debuff": null},
     {"type": "debuff", "value": 0, "debuff": "no_attack"},
     {"type": "defend", "value": 12, "debuff": null},
-    {"type": "attack", "value": 20, "debuff": null}
+    {"type": "attack", "value": 18, "debuff": null}
   ]
 }

@@ -5,8 +5,8 @@
   "is_boss": false,
   "sprite_idx": 6,
   "intents": [
-    {"type": "defend", "value": 14, "debuff": null},
-    {"type": "attack", "value": 15, "debuff": null},
+    {"type": "defend", "value": 10, "debuff": null},
+    {"type": "attack", "value": 13, "debuff": null},
     {"type": "debuff", "value": 0, "debuff": "no_attack"}
   ]
 }

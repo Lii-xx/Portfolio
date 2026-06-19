@@ -394,6 +394,7 @@ func perform_blank_convert() -> bool:
 		return false
 	_remove_card(blanks[0]["id"])
 	_remove_card(blanks[1]["id"])
+	state["player"]["perm_strength"] = state["player"].get("perm_strength", 0) + 1
 	return true
 
 ## 随机奖励卡牌
