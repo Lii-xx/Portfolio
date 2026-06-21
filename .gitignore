@@ -22,6 +22,10 @@ godot-editor/
 # Godot 导出 exe（体积太大，不提交）
 download/
 
+# Godot Web 导出产物（大文件，不提交）
+game-godot-web/*.pck
+game-godot-web/*.wasm
+
 # Godot 导出产物（不应出现在源码目录，导出到 game-godot-web/ 和 download/）
 game-godot/index.*
 game-godot/*.exe
