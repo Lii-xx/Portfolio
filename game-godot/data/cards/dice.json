@@ -10,5 +10,5 @@
   "desc": "掷骰子1-6，触发对应随机效果",
   "special": "dice",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/dice.png"
 }

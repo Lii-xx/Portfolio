@@ -10,5 +10,5 @@
   "desc": "掷骰：奇数对随机敌人造成3×点数伤害；偶数获得点数×2格挡",
   "special": "fate_wheel",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/fate_wheel.png"
 }

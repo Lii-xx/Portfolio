@@ -10,5 +10,5 @@
   "desc": "造成8伤害，回复造成伤害的一半生命",
   "special": "lifesteal",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/vampiric.png"
 }

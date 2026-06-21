@@ -154,6 +154,9 @@ body::after{
 }
 .demo-dropdown-menu a:hover{background:var(--surface);color:var(--cyan);}
 .demo-dropdown-menu .demo-disabled{opacity:.5;cursor:default;}
+/* badge 内的下拉：菜单向左展开，尺寸略小 */
+.badge .demo-dropdown-menu{right:auto;left:0;min-width:130px;font-size:13px;}
+.badge .demo-dropdown-menu a,.badge .demo-dropdown-menu .demo-disabled{padding:8px 12px;}
 /* 移动端卡牌Demo 子项 */
 .mobile-demo-title{display:block;padding:16px 24px 6px;color:var(--pink);font-size:14px;font-weight:500;border-bottom:1px solid var(--border);}
 .mobile-demo-sub{display:block;padding:12px 24px 12px 40px;border-bottom:1px solid var(--border);color:var(--text-secondary);font-size:15px;transition:var(--transition);}
@@ -379,6 +382,21 @@ footer::before{
 .footer-content p{color:var(--text-secondary);font-family:'VT323',monospace;font-size:18px;letter-spacing:2px;}
 .footer-content p::before{content:'© ';color:var(--green);}
 
+/* ========== GITHUB BUTTON ========== */
+.github-btn{
+    display:inline-flex;align-items:center;gap:8px;
+    margin-top:6px;padding:7px 14px;border-radius:var(--radius);
+    background:rgba(0,240,255,.08);border:1px solid var(--cyan);
+    color:var(--cyan);font-size:14px;letter-spacing:1px;
+    box-shadow:0 0 10px rgba(0,240,255,.25);
+    transition:var(--transition);
+}
+.github-btn:hover{
+    background:var(--cyan);color:var(--bg);
+    box-shadow:0 0 16px var(--cyan);
+    transform:translate(-2px,-2px);
+}
+
 /* ========== BACK TO TOP ========== */
 #backToTop{
     position:fixed;bottom:30px;right:30px;width:48px;height:48px;border-radius:var(--radius);
@@ -410,6 +428,15 @@ footer::before{
     .orb{display:none;}
 }
 </style>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?cde40b6c7ee09c46f32426d1910d123f";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 </head>
 <body>
 
@@ -432,7 +459,8 @@ footer::before{
 <button class="demo-trigger" type="button">卡牌Demo <i class="fa-solid fa-chevron-down"></i></button>
 <div class="demo-dropdown-menu">
 <a href="game.html">HTML版</a>
-<span class="demo-disabled">Godot版（测试中）</span>
+<a href="game-godot-web.html">Godot版（Web）</a>
+<a href="download/CardRoguelike.exe" download title="文件约101MB，无需安装Godot，双击即可运行。若浏览器提示'可能有害'或'已阻止'，请点击'保留/允许'继续下载">下载完整版exe（约101MB·独立运行）</a>
 </div>
 </div>
 </nav>
@@ -447,7 +475,8 @@ footer::before{
 <a href="#skills">技能工具</a>
 <span class="mobile-demo-title">卡牌Demo</span>
 <a href="game.html" class="mobile-demo-sub">HTML版</a>
-<span class="mobile-demo-sub mobile-demo-disabled">Godot版（测试中）</span>
+<a href="game-godot-web.html" class="mobile-demo-sub">Godot版（Web）</a>
+<a href="download/CardRoguelike.exe" class="mobile-demo-sub" download title="文件约101MB，无需安装Godot，双击即可运行。若浏览器拦截请点'保留/允许'">下载完整版exe（约101MB·独立运行）</a>
 </div>
 
 <!-- HERO -->
@@ -462,7 +491,7 @@ footer::before{
 <div class="profile-card">
 <div class="card-top">
 <div class="avatar">GD</div>
-<div><h3>梁皓</h3><p>3047376287@qq.com<br><a href="https://github.com/Lii-xx" target="_blank">GitHub主页</a></p></div>
+<div><h3>梁皓</h3><p>3047376287@qq.com</p><a href="https://github.com/Lii-xx" target="_blank" class="github-btn"><i class="fa-brands fa-github"></i>GitHub主页</a></div>
 </div>
 <div class="card-divider"></div>
 <div class="profile-stats">
@@ -621,6 +650,19 @@ footer::before{
 <h3>Agent</h3>
 <div class="badge-list">
 <span class="badge">Codex</span><span class="badge">Cursor</span><span class="badge">Claude</span><span class="badge">Zcode</span><span class="badge">Trae</span><span class="badge">CodeBuddy</span><span class="badge">QoderWork</span>
+</div>
+</div>
+<div class="skill-group hidden">
+<h3>游戏开发</h3>
+<div class="badge-list">
+<div class="badge demo-dropdown" style="border-color:var(--pink);color:var(--pink);text-shadow:0 0 6px rgba(255,46,136,.4);">
+<button class="demo-trigger" type="button">卡牌Demo <i class="fa-solid fa-chevron-down"></i></button>
+<div class="demo-dropdown-menu">
+<a href="game.html">HTML版</a>
+<a href="game-godot-web.html">Godot版（Web）</a>
+<a href="download/CardRoguelike.exe" download title="文件约101MB，无需安装Godot，双击即可运行。若浏览器提示'可能有害'或'已阻止'，请点击'保留/允许'继续下载">下载完整版exe（约101MB·独立运行）</a>
+</div>
+</div>
 </div>
 </div>
 </div>

@@ -60,6 +60,7 @@ func _build_ui() -> void:
 	hp_label.text = "HP"
 	hp_label.add_theme_font_size_override("font_size", 9)
 	hp_label.add_theme_color_override("font_color", Color(0.61, 0.56, 0.78, 1))
+	hp_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hp_group.add_child(hp_label)
 
 	hp_bar = ProgressBar.new()
@@ -67,6 +68,7 @@ func _build_ui() -> void:
 	hp_bar.max_value = 100.0
 	hp_bar.value = 100.0
 	hp_bar.show_percentage = false
+	hp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var bar_fg = StyleBoxFlat.new()
 	bar_fg.bg_color = Color(1, 0.18, 0.53, 1)
 	bar_fg.corner_radius_top_left = 0
@@ -87,6 +89,7 @@ func _build_ui() -> void:
 	hp_text = Label.new()
 	hp_text.add_theme_font_size_override("font_size", 18)
 	hp_text.add_theme_color_override("font_color", Color(0, 1, 0.25, 1))
+	hp_text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hp_group.add_child(hp_text)
 
 	add_child(hp_group)
@@ -95,10 +98,8 @@ func _build_ui() -> void:
 	block_group = HBoxContainer.new()
 	block_group.add_theme_constant_override("separation", 5)
 	block_group.mouse_filter = Control.MOUSE_FILTER_STOP
-	var block_label = Label.new()
-	block_label.text = "🛡"
-	block_label.add_theme_font_size_override("font_size", 9)
-	block_group.add_child(block_label)
+	var block_icon = IconHelper.create_icon("shield", 14)
+	block_group.add_child(block_icon)
 	block_val = Label.new()
 	block_val.add_theme_font_size_override("font_size", 18)
 	block_val.add_theme_color_override("font_color", Color(0, 1, 0.25, 1))
@@ -111,10 +112,8 @@ func _build_ui() -> void:
 	# 力量组（带？号按钮，对齐HTML）
 	var str_group = HBoxContainer.new()
 	str_group.add_theme_constant_override("separation", 5)
-	var str_label = Label.new()
-	str_label.text = "💪"
-	str_label.add_theme_font_size_override("font_size", 9)
-	str_group.add_child(str_label)
+	var str_icon = IconHelper.create_icon("strength", 14)
+	str_group.add_child(str_icon)
 	strength_val = Label.new()
 	strength_val.add_theme_font_size_override("font_size", 18)
 	strength_val.add_theme_color_override("font_color", Color(0, 1, 0.25, 1))
@@ -125,18 +124,33 @@ func _build_ui() -> void:
 	str_help_btn.custom_minimum_size = Vector2(24, 24)
 	str_help_btn.add_theme_font_size_override("font_size", 11)
 	str_help_btn.add_theme_color_override("font_color", Color(0, 0.94, 1, 1))
-	var help_style = StyleBoxFlat.new()
-	help_style.bg_color = Color(0, 0.94, 1, 0.15)
-	help_style.border_color = Color(0, 0.94, 1, 1)
-	help_style.border_width_bottom = 1
-	help_style.border_width_top = 1
-	help_style.border_width_left = 1
-	help_style.border_width_right = 1
-	help_style.corner_radius_top_left = 12
-	help_style.corner_radius_top_right = 12
-	help_style.corner_radius_bottom_left = 12
-	help_style.corner_radius_bottom_right = 12
-	str_help_btn.add_theme_stylebox_override("normal", help_style)
+	# normal 样式：透明背景，只保留"？"文字（去掉圆形/椭圆背景）
+	var help_normal = StyleBoxFlat.new()
+	help_normal.bg_color = Color(0, 0, 0, 0)
+	help_normal.border_width_bottom = 0
+	help_normal.border_width_top = 0
+	help_normal.border_width_left = 0
+	help_normal.border_width_right = 0
+	# hover/pressed 样式：青色半透明背景 + 青色边框（悬停反馈）
+	var help_hover = StyleBoxFlat.new()
+	help_hover.bg_color = Color(0, 0.94, 1, 0.15)
+	help_hover.border_color = Color(0, 0.94, 1, 1)
+	help_hover.border_width_bottom = 1
+	help_hover.border_width_top = 1
+	help_hover.border_width_left = 1
+	help_hover.border_width_right = 1
+	help_hover.corner_radius_top_left = 12
+	help_hover.corner_radius_top_right = 12
+	help_hover.corner_radius_bottom_left = 12
+	help_hover.corner_radius_bottom_right = 12
+	str_help_btn.add_theme_stylebox_override("normal", help_normal)
+	str_help_btn.add_theme_stylebox_override("hover", help_hover)
+	str_help_btn.add_theme_stylebox_override("pressed", help_hover)
+	str_help_btn.add_theme_stylebox_override("focus", help_normal)
+	str_help_btn.add_theme_stylebox_override("disabled", help_normal)
+	str_help_btn.focus_mode = Control.FOCUS_NONE
+	str_help_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	str_help_btn.mouse_default_cursor_shape = Control.CURSOR_ARROW
 	str_help_btn.pressed.connect(_toggle_strength_detail)
 	str_group.add_child(str_help_btn)
 	add_child(str_group)
@@ -197,8 +211,12 @@ func update_display() -> void:
 		for child in buff_container.get_children():
 			child.queue_free()
 		if p.get("campfire_str_buff", 0) > 0:
-			var tag = _create_buff_tag("🔥力量 +" + str(p["campfire_str_buff"]) + "场")
+			var tag = _create_buff_tag_with_icon("fire", "力量 +" + str(p["campfire_str_buff"]) + "场")
 			buff_container.add_child(tag)
+		# 荆棘反伤显示
+		if p.get("thorn_buff", 0) > 0:
+			var thorn_tag = _create_buff_tag_with_icon("thorn", "荆棘 +" + str(p["thorn_buff"]))
+			buff_container.add_child(thorn_tag)
 
 func _create_debuff_tag(debuff: String) -> Label:
 	var label = Label.new()
@@ -217,6 +235,20 @@ func _create_buff_tag(text: String) -> Label:
 	label.add_theme_color_override("font_color", Color(1, 0.82, 0.25, 1))
 	label.add_theme_font_size_override("font_size", 10)
 	return label
+
+## 创建带图标的增益标签
+func _create_buff_tag_with_icon(icon_name: String, text: String) -> HBoxContainer:
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 2)
+	var icon = IconHelper.create_icon(icon_name, 12)
+	hbox.add_child(icon)
+	var label = Label.new()
+	label.text = text
+	label.add_theme_color_override("font_color", Color(1, 0.82, 0.25, 1))
+	label.add_theme_font_size_override("font_size", 10)
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(label)
+	return hbox
 
 func flash_hit() -> void:
 	var tween = create_tween()
@@ -237,12 +269,12 @@ func _toggle_strength_detail() -> void:
 	var campfire = GameManager.CAMPFIRE_STR_BONUS if p.get("campfire_str_buff", 0) > 0 else 0
 	var total = GameManager.get_strength()
 
-	_str_detail_panel = _create_detail_panel("💪 力量来源", [
+	_str_detail_panel = _create_detail_panel("力量来源", [
 		["永久力量", str(perm)],
 		["临时力量（本关）", str(temp)],
 		["火堆力量（剩余%d场）" % p.get("campfire_str_buff", 0), str(campfire)],
 		["合计", str(total)],
-	], Color(0, 0.94, 1, 1))
+	], Color(0, 0.94, 1, 1), "strength")
 	_str_detail_panel.set_as_top_level(true)
 	# 定位到？号按钮下方
 	var btn_rect = str_help_btn.get_global_rect()
@@ -261,12 +293,12 @@ func _show_block_detail() -> void:
 	var dice_block = p.get("dice_block_buff", 0)
 	var current = p.get("block", 0)
 
-	_block_detail_panel = _create_detail_panel("🛡 护甲来源", [
+	_block_detail_panel = _create_detail_panel("护甲来源", [
 		["卡牌格挡", str(card_block)],
 		["延迟奖励（每回合）", str(delayed_block)],
 		["骰子效果（每回合）", str(dice_block)],
 		["当前合计", str(current)],
-	], Color(0, 0.94, 1, 1))
+	], Color(0, 0.94, 1, 1), "shield")
 	_block_detail_panel.set_as_top_level(true)
 	# 定位到护甲组下方
 	var block_rect = block_group.get_global_rect()
@@ -280,7 +312,7 @@ func _hide_block_detail() -> void:
 		_block_detail_panel = null
 
 ## 创建详情面板（通用）
-func _create_detail_panel(title_text: String, rows: Array, accent_color: Color) -> PanelContainer:
+func _create_detail_panel(title_text: String, rows: Array, accent_color: Color, icon_name: String = "") -> PanelContainer:
 	var panel = PanelContainer.new()
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.08, 0.04, 0.18, 0.97)
@@ -299,12 +331,19 @@ func _create_detail_panel(title_text: String, rows: Array, accent_color: Color) 
 	vbox.add_theme_constant_override("separation", 4)
 	panel.add_child(vbox)
 
-	# 标题
+	# 标题（支持前置图标）
+	var title_row = HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 4)
+	if icon_name != "":
+		var title_icon = IconHelper.create_icon(icon_name, 14)
+		title_row.add_child(title_icon)
 	var title = Label.new()
 	title.text = title_text
 	title.add_theme_font_size_override("font_size", 12)
 	title.add_theme_color_override("font_color", accent_color)
-	vbox.add_child(title)
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	title_row.add_child(title)
+	vbox.add_child(title_row)
 
 	# 数据行
 	for row in rows:

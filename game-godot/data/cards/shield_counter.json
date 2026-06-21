@@ -10,5 +10,5 @@
   "desc": "回合结束对随机敌人打出当前防御的一半",
   "special": "shield_counter",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/shield_counter.png"
 }

@@ -10,5 +10,5 @@
   "desc": "造成10伤害，力量≥5时回复实际伤害",
   "special": "bloodthirst",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/bloodthirst.png"
 }

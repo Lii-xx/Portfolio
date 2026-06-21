@@ -10,5 +10,5 @@
   "desc": "消耗全部能量，对全体造成4×X伤害(X=消耗能量)",
   "special": "spin",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/spin.png"
 }

@@ -10,5 +10,5 @@
   "desc": "每2张兑换2次卡牌奖励，额外+1永久力量",
   "special": "blank",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/blank.png"
 }

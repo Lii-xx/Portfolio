@@ -2,7 +2,7 @@
   "choices": [
     {
       "id": "heal",
-      "icon": "❤️",
+      "icon": "血",
       "name": "恢复 20 生命",
       "desc": "立即回复20HP",
       "type": "heal",
@@ -11,7 +11,7 @@
     },
     {
       "id": "str",
-      "icon": "💪",
+      "icon": "力",
       "name": "力量加持 (+3力量 / 3场)",
       "desc": "接下来3场战斗，每场+3力量",
       "type": "campfire_str",

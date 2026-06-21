@@ -10,5 +10,5 @@
   "desc": "造成8伤害，本场战斗+3力量",
   "special": "strength",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/war_cry.png"
 }

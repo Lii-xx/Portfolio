@@ -10,5 +10,5 @@
   "desc": "下回合最大能量+2",
   "special": "replay",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/replay.png"
 }

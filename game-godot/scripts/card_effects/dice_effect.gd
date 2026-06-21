@@ -8,7 +8,8 @@ func execute(_source: Dictionary, _target_idx: int, game_state: Dictionary) -> D
 	EventBus.sfx_requested.emit("dice_roll")
 	var roll = _roll_dice(game_state)
 	var player = game_state["player"]
-	var events: Array = []
+	# dice事件在最前，UI先播放骰子滚动动画再播放效果事件
+	var events: Array = [{"type": "dice", "value": roll}]
 	var strength = GameManager.get_strength()
 
 	match roll:
@@ -65,11 +66,10 @@ func execute(_source: Dictionary, _target_idx: int, game_state: Dictionary) -> D
 						events.append({"type": "kill", "idx": i})
 					# 触发獠牙（对齐HTML）
 					GameManager._apply_fangs_buff(actual, events)
-			player["block"] += 6
+			player["block"] = player.get("block", 0) + 6
 			player["card_block_this_turn"] = player.get("card_block_this_turn", 0) + 6
 			events.append({"type": "block", "value": 6})
 
-	events.append({"type": "dice", "value": roll})
 	return {"events": events, "meta": {}}
 
 ## 掷骰子，lucky_draw 影响概率（对齐HTML加权抽样，多张叠加）

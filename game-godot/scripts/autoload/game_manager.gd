@@ -10,6 +10,7 @@ const DEFAULT_MAX_ENERGY: int = 2  # 每回合默认最大能量
 const MAX_EXTRA_ENERGY: int = 6    # 韬光养晦等效果累加的最大能量上限
 
 var state: Dictionary = {}
+var _state_snapshot: Dictionary = {}  # 关卡初始状态快照（用于SL读档）
 
 func _ready() -> void:
 	pass
@@ -54,6 +55,20 @@ func init_game() -> void:
 	state["player"]["deck"] = []
 	for card_key in starting:
 		state["player"]["deck"].append(CardRegistry.make_card(card_key))
+
+## 保存当前 state 的深拷贝作为关卡初始快照（用于SL读档）
+func save_snapshot() -> void:
+	_state_snapshot = state.duplicate(true)
+
+## 读档：将快照深拷贝回 state，返回 true 表示成功
+func load_snapshot() -> bool:
+	if _state_snapshot.is_empty():
+		push_warning("[GameManager] load_snapshot: 快照为空，无法读档")
+		return false
+	state = _state_snapshot.duplicate(true)
+	state["animating"] = false
+	state["selection"] = null
+	return true
 
 func get_strength() -> int:
 	var p = state["player"]
@@ -321,12 +336,24 @@ func start_turn() -> void:
 ## 进入下一层
 func advance_floor() -> String:
 	state["combat_count"] += 1
-	if EncounterRegistry.get_campfire_floors().has(state["combat_count"]):
+	var campfire_floors = EncounterRegistry.get_campfire_floors()
+	# JSON解析后元素是float，转成int确保与combat_count(int)类型匹配
+	var cf_int: Array = []
+	for f in campfire_floors:
+		cf_int.append(int(f))
+	print("[GameManager] advance_floor: combat_count=%d, campfire_floors=%s" % [state["combat_count"], cf_int])
+	if cf_int.has(state["combat_count"]):
 		state["floor"] += 1
 		state["phase"] = "campfire"
+		print("[GameManager] advance_floor: returning 'campfire', phase=%s" % state["phase"])
 		return "campfire"
 	state["floor"] += 1
-	return spawn_encounter()
+	var result = spawn_encounter()
+	# victory 时没有下一层，回退 floor+1，保持最高通关楼层=最后一层
+	if result == "victory":
+		state["floor"] -= 1
+	print("[GameManager] advance_floor: returning '%s'" % result)
+	return result
 
 ## 生成战斗
 func spawn_encounter() -> String:
@@ -359,6 +386,8 @@ func spawn_encounter() -> String:
 	state["player"]["delayed_block_buff"] = state["player"].get("delayed_block_buff", 0)  # 延迟奖励跨战斗保留
 	state["phase"] = "battle"
 	state["selection"] = null
+	# 保存关卡初始快照（用于SL读档）
+	save_snapshot()
 	return "battle"
 
 ## 火堆选择
@@ -368,6 +397,7 @@ func campfire_choice(choice_id: String) -> String:
 		if choice["id"] == choice_id:
 			_apply_campfire_choice(choice)
 			break
+	state["floor"] += 1  # 火堆层已算一层，离开火堆进入下一层再+1
 	return spawn_encounter()
 
 func _apply_campfire_choice(choice: Dictionary) -> void:

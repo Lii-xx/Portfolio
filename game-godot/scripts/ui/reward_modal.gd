@@ -102,35 +102,21 @@ func _create_reward_card_btn(reward: Dictionary) -> Button:
 	var special = data.get("special", "")
 	var cost = data.get("cost", 0)
 	var card_type = data.get("type", "attack")
-	var aoe = data.get("aoe", false)
 	var max_uses = data.get("max_uses", 0)
 
-	# 第一行：能量消耗 + 类型 + (全体)标记（对齐HTML）
-	var cost_str = ""
-	if special == "spin":
-		cost_str = "⚡X "
-	elif cost > 0:
-		cost_str = "⚡" + str(cost) + " "
-	var aoe_str = " (全体)" if aoe else ""
-	var type_line = cost_str + _type_label(card_type) + aoe_str
-
-	# 使用次数行（blank不显示，0次显示∞）
-	var uses_line = ""
-	if special != "blank":
-		uses_line = "\n" + ("∞" if max_uses == 0 else str(max_uses) + "次")
-
-	btn.text = "%s\n%s\n%s%s" % [type_line, data.get("name", "???"), data.get("desc", ""), uses_line]
-	btn.custom_minimum_size = Vector2(140, 150)
-	btn.add_theme_font_size_override("font_size", 11)
-
+	# 类型颜色
 	var type_color = Color(0, 0.94, 1, 1)
 	match card_type:
 		"attack": type_color = Color(1, 0.18, 0.53, 1)
 		"utility": type_color = Color(0, 0.94, 1, 1)
 		"power": type_color = Color(0.9, 0.72, 0, 1)
 		"special": type_color = Color(0.94, 0.92, 1, 1)
-	btn.add_theme_color_override("font_color", type_color)
 
+	# 用空 text，内容交给自定义 VBox（图片在上，文字在下，对齐手牌 CardUI）
+	btn.text = ""
+	btn.custom_minimum_size = Vector2(140, 190)
+
+	# 样式（与手牌风格一致）
 	var style = StyleBoxFlat.new()
 	style.border_color = type_color
 	style.bg_color = Color(0.12, 0.06, 0.29, 0.92)
@@ -138,15 +124,102 @@ func _create_reward_card_btn(reward: Dictionary) -> Button:
 	style.border_width_top = 2
 	style.border_width_left = 2
 	style.border_width_right = 2
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
-	style.content_margin_left = 10
-	style.content_margin_right = 10
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	style.content_margin_left = 6
+	style.content_margin_right = 6
 	style.corner_radius_top_left = 4
 	style.corner_radius_top_right = 4
 	style.corner_radius_bottom_left = 4
 	style.corner_radius_bottom_right = 4
 	btn.add_theme_stylebox_override("normal", style)
+	# 悬停/按下时边框变青色，提示可点
+	var hover_style = style.duplicate()
+	hover_style.border_color = Color(0, 0.94, 1, 1)
+	btn.add_theme_stylebox_override("hover", hover_style)
+	btn.add_theme_stylebox_override("pressed", hover_style)
+
+	# VBox 布局（填满按钮内部）
+	var vbox = VBoxContainer.new()
+	vbox.anchor_right = 1.0
+	vbox.anchor_bottom = 1.0
+	vbox.offset_left = 6
+	vbox.offset_top = 6
+	vbox.offset_right = -6
+	vbox.offset_bottom = -6
+	vbox.add_theme_constant_override("separation", 3)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(vbox)
+
+	# 卡牌图片（与 card_ui.gd 的 art_rect 同设置：88x60，保持比例居中）
+	var art_path = data.get("art", "")
+	if art_path != "" and ResourceLoader.exists(art_path):
+		var art_rect = TextureRect.new()
+		art_rect.custom_minimum_size = Vector2(88, 60)
+		art_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art_rect.texture = load(art_path)
+		vbox.add_child(art_rect)
+
+	# 能量消耗 + 类型（图标+文字）
+	var cost_type_row = HBoxContainer.new()
+	cost_type_row.add_theme_constant_override("separation", 2)
+	cost_type_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if special == "spin":
+		var energy_icon = IconHelper.create_icon("energy", 10)
+		cost_type_row.add_child(energy_icon)
+		var x_lbl = Label.new()
+		x_lbl.text = "X"
+		x_lbl.add_theme_font_size_override("font_size", 9)
+		x_lbl.add_theme_color_override("font_color", type_color)
+		x_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		x_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cost_type_row.add_child(x_lbl)
+	elif cost > 0:
+		var energy_icon = IconHelper.create_icon("energy", 10)
+		cost_type_row.add_child(energy_icon)
+		var cost_lbl = Label.new()
+		cost_lbl.text = str(cost)
+		cost_lbl.add_theme_font_size_override("font_size", 9)
+		cost_lbl.add_theme_color_override("font_color", type_color)
+		cost_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cost_type_row.add_child(cost_lbl)
+	var type_text_label = Label.new()
+	type_text_label.text = _type_label(card_type)
+	type_text_label.add_theme_font_size_override("font_size", 9)
+	type_text_label.add_theme_color_override("font_color", type_color)
+	type_text_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	type_text_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cost_type_row.add_child(type_text_label)
+	vbox.add_child(cost_type_row)
+
+	# 卡牌名
+	var name_label = Label.new()
+	name_label.text = data.get("name", "???")
+	name_label.add_theme_font_size_override("font_size", 11)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(name_label)
+
+	# 描述
+	var desc_label = Label.new()
+	desc_label.text = data.get("desc", "")
+	desc_label.add_theme_font_size_override("font_size", 8)
+	desc_label.add_theme_color_override("font_color", Color(0.78, 0.74, 0.92, 1))
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	desc_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(desc_label)
+
+	# 使用次数（blank 不显示，0 次显示 ∞）
+	if special != "blank":
+		var uses_label = Label.new()
+		uses_label.text = "∞" if max_uses == 0 else str(max_uses) + "次"
+		uses_label.add_theme_font_size_override("font_size", 10)
+		uses_label.add_theme_color_override("font_color", Color(0, 1, 0.25, 1))
+		uses_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(uses_label)
 
 	btn.pressed.connect(_on_reward_picked.bind(reward["key"]))
 	return btn
@@ -162,7 +235,8 @@ func _type_label(card_type: String) -> String:
 
 func _create_delayed_reward_btn(reward: Dictionary) -> Button:
 	var btn = Button.new()
-	btn.text = reward.get("icon", "") + " " + reward.get("name", "") + "\n" + reward.get("desc", "")
+	btn.icon = IconHelper.get_texture(reward.get("icon", ""))
+	btn.text = reward.get("name", "") + "\n" + reward.get("desc", "")
 	btn.custom_minimum_size = Vector2(130, 60)
 	btn.add_theme_font_size_override("font_size", 11)
 	btn.add_theme_color_override("font_color", Color(1, 0.82, 0.25, 1))
@@ -202,8 +276,10 @@ func _on_delayed_reward_picked(reward_id: String) -> void:
 
 func _advance_after_reward() -> void:
 	var result = GameManager.advance_floor()
+	print("[RewardModal] _advance_after_reward: result=%s" % result)
 	match result:
 		"campfire":
+			print("[RewardModal] emitting campfire_entered")
 			EventBus.campfire_entered.emit()
 		"victory":
 			GameManager.save_high_score()

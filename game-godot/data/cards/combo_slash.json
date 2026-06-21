@@ -10,5 +10,5 @@
   "desc": "造成4伤害3次",
   "special": "triple_hit",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/combo_slash.png"
 }

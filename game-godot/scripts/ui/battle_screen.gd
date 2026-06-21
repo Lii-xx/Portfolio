@@ -45,7 +45,9 @@ func _ready() -> void:
 		card_area.move_child(scroll, hand_idx)
 		# CardHand 在 ScrollContainer 内不扩展，保持卡牌原始尺寸
 		card_hand.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		# 方案B：顶部对齐 + 关闭 ScrollContainer 裁剪，让卡牌选中上抬时可超出框线
 		card_hand.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		scroll.clip_contents = false
 
 	# 创建DragSystem子节点（拖拽系统）
 	_drag_system = Control.new()
@@ -74,6 +76,32 @@ func _ready() -> void:
 		action_bar.sacrifice_pressed.connect(_on_sacrifice_pressed)
 		action_bar.blank_convert_pressed.connect(_on_blank_convert_pressed)
 		action_bar.help_pressed.connect(_on_help_pressed)
+		action_bar.restart_pressed.connect(_on_restart_pressed)
+
+	# 左上角返回标题按钮
+	_add_title_button()
+
+## 右上角返回标题按钮（楼层显示下方）
+func _add_title_button() -> void:
+	if has_node("TitleButton"):
+		return
+	var btn = Button.new()
+	btn.name = "TitleButton"
+	btn.text = "主菜单"
+	btn.add_theme_font_size_override("font_size", 11)
+	btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	btn.offset_left = -78
+	btn.offset_top = 36
+	btn.offset_right = -8
+	btn.offset_bottom = 58
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	btn.pressed.connect(_on_return_to_title)
+	add_child(btn)
+
+func _on_return_to_title() -> void:
+	EventBus.sfx_requested.emit("ui_click")
+	visible = false
+	EventBus.title_requested.emit()
 
 func _on_game_started() -> void:
 	print("[BattleScreen] _on_game_started called, state empty: %s" % GameManager.state.is_empty())
@@ -189,7 +217,13 @@ func _refresh_cards() -> void:
 	var deck = GameManager.state["player"]["deck"]
 	var phase = GameManager.state.get("phase", "battle")
 	print("[BattleScreen] _refresh_cards: %d cards, phase=%s" % [deck.size(), phase])
-	
+
+	# 当前选中的卡牌ID（用于重建后恢复选中态）
+	var sel = GameManager.state.get("selection")
+	var selected_card_id = -1
+	if sel and sel is Dictionary:
+		selected_card_id = sel.get("card_id", -1)
+
 	for card in deck:
 		var can_play = GameManager.can_play_card(card) if phase == "battle" else true
 		if phase == "sacrifice":
@@ -198,6 +232,9 @@ func _refresh_cards() -> void:
 		card_hand.add_child(card_ui)
 		# setup必须在add_child后，因为需要theme
 		card_ui.setup(card_ui.get_meta("card_data"), card_ui.get_meta("can_play"))
+		# 选中态：根据 selection 恢复选中卡牌的上抬效果
+		if card.get("id", -1) == selected_card_id:
+			card_ui.set_selected(true)
 		_card_uis.append(card_ui)
 	print("[BattleScreen] _refresh_cards done: %d card_uis created" % _card_uis.size())
 
@@ -227,13 +264,13 @@ func _create_card_ui(data: Dictionary, can_play: bool) -> Panel:
 
 	var name_label = Label.new()
 	name_label.name = "NameLabel"
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", 11)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(name_label)
 
 	var desc_label = Label.new()
 	desc_label.name = "DescLabel"
-	desc_label.add_theme_font_size_override("font_size", 9)
+	desc_label.add_theme_font_size_override("font_size", 8)
 	desc_label.add_theme_color_override("font_color", Color(0.78, 0.74, 0.92, 1))
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -243,23 +280,10 @@ func _create_card_ui(data: Dictionary, can_play: bool) -> Panel:
 
 	var uses_label = Label.new()
 	uses_label.name = "UsesLabel"
-	uses_label.add_theme_font_size_override("font_size", 11)
+	uses_label.add_theme_font_size_override("font_size", 10)
 	uses_label.add_theme_color_override("font_color", Color(0, 1, 0.25, 1))
 	uses_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(uses_label)
-
-	# AOE 角标（绝对定位在卡牌右上角），不参与布局也不阻挡点击
-	var aoe_badge = Label.new()
-	aoe_badge.name = "AoeBadge"
-	aoe_badge.add_theme_font_size_override("font_size", 8)
-	aoe_badge.add_theme_color_override("font_color", Color(1, 0.82, 0.25, 1))
-	aoe_badge.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
-	aoe_badge.offset_left = 70
-	aoe_badge.offset_top = -2
-	aoe_badge.visible = false
-	aoe_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	aoe_badge.z_index = 5
-	card.add_child(aoe_badge)
 
 	# 先存数据，setup在add_child后执行（需要theme可用）
 	card.set_meta("card_data", data)
@@ -290,11 +314,11 @@ func _refresh_actions() -> void:
 			var count = GameManager.state.get("sacrifice_selected", []).size()
 			turn_hint.text = "选择献祭卡牌 (%d/2)" % count
 		else:
-			# 显示能量（对齐HTML：⚡energy/maxEnergy）
+			# 显示能量（对齐HTML：能energy/maxEnergy）
 			var p = GameManager.state["player"]
 			var energy = p.get("energy", 0)
 			var max_energy = p.get("max_energy", 2)
-			turn_hint.text = "出牌 (⚡%d/%d)" % [energy, max_energy]
+			turn_hint.text = "出牌 (能量 %d/%d)" % [energy, max_energy]
 			# 能量减少时触发跳动
 			if _prev_energy >= 0 and energy < _prev_energy:
 				TweenHelpers.energy_spend(turn_hint)
@@ -338,9 +362,8 @@ func _on_card_drag_started(card_id: int) -> void:
 	var card = GameManager._find_card(card_id)
 	if card.is_empty() or not GameManager.can_play_card(card):
 		return
-	# 启动DragSystem
+	# 启动DragSystem（不调用refresh_all，避免销毁怪物槽位导致拖拽命中检测失效）
 	_drag_system.start_drag(card_id, card, _monster_slots)
-	refresh_all()
 
 ## 拖拽完成（DragSystem回调）
 func _on_drag_completed(card_id: int, target_idx: int) -> void:
@@ -467,6 +490,19 @@ func _on_skip_turn() -> void:
 	GameManager.state["selection"] = null
 	_do_monster_turn()
 
+## "重新开始本关"按钮：读档回到关卡初始状态
+func _on_restart_pressed() -> void:
+	if GameManager.state.get("animating", false):
+		return
+	# 取消正在进行的拖拽
+	if _drag_system and _drag_system.has_method("cancel_drag"):
+		_drag_system.cancel_drag()
+	# 读档：将快照深拷贝回 state
+	if not GameManager.load_snapshot():
+		return
+	print("[BattleScreen] 重新开始本关，读档成功")
+	refresh_all()
+
 func _on_sacrifice_pressed() -> void:
 	if GameManager.state.get("animating", false):
 		return
@@ -546,7 +582,7 @@ func _show_help_modal() -> void:
 	var sections = [
 		["基础规则", "每回合2点能量，拖动卡牌到怪物身上出牌，确认后自动结束回合。"],
 		["卡牌类型", "攻击 — 造成伤害（含AOE、吸血等）\n防御 — 获得格挡\n能力 — 永久效果（打出后移除）\n特殊 — 空白牌"],
-		["能量", "每回合恢复2点能量，每张牌消耗对应能量（卡牌左上角⚡数字）"],
+		["能量", "每回合恢复2点能量，每张牌消耗对应能量（卡牌左上角能数字）"],
 		["群怪", "每第3场战斗为群怪，AOE对全体生效"],
 		["出牌", "拖动卡牌到怪物 → 显示预览伤害 → 点击确认 → 自动结束回合\n重新拖动另一张牌取消上次选择"],
 		["火堆", "每3层后出现：恢复20HP / 3场战斗+3力量"],
@@ -667,6 +703,14 @@ func _play_card_events(events: Array, card: Dictionary) -> void:
 			"double_hit":
 				# 连劈标记，仅视觉反馈
 				delay += 0.05
+			"dice":
+				# 骰子/命运轮盘：播放滚动动画（对齐HTML _playDiceAnimation）
+				var roll_val = e["value"]
+				var card_special = card.get("special", "")
+				_delayed_action(delay, func():
+					_play_dice_animation(roll_val, card_special)
+				)
+				delay += 3.7  # 骰子动画总时长（滚动约2.5秒 + 停留1.2秒）
 	
 	_delayed_action(delay + 0.25, func():
 		GameManager.state["animating"] = false
@@ -681,12 +725,97 @@ func _play_card_events(events: Array, card: Dictionary) -> void:
 			EventBus.combat_won.emit()
 			return
 
-		# 检查是否还能出牌（基于能量）
-		var can_play_more = GameManager.state["player"]["energy"] > 0 and GameManager.state["player"]["deck"].any(func(c): return GameManager.can_play_card(c))
-		if not can_play_more:
-			_do_monster_turn()
-		# 否则继续出牌，不进入怪物回合
+		# 回合只能由玩家点击"结束回合"按钮手动结束
+		# （无论能量是否用完，都不自动进入怪物回合）
 	)
+
+## 骰子滚动动画（对齐HTML _playDiceAnimation）
+## 全屏遮罩 + 骰子框 + 18步滚动（逐渐变慢）+ 显示点数和效果说明
+func _play_dice_animation(roll: int, card_special: String) -> void:
+	# 创建全屏遮罩
+	var overlay = ColorRect.new()
+	overlay.color = Color(0.05, 0.01, 0.13, 0.85)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+
+	# 垂直居中容器
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 16)
+	overlay.add_child(vbox)
+
+	# 骰子框（120x120，显示数字）
+	var dice_box = Panel.new()
+	dice_box.custom_minimum_size = Vector2(120, 120)
+	dice_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var box_style = StyleBoxFlat.new()
+	box_style.bg_color = Color(0.12, 0.06, 0.29, 1)
+	box_style.border_color = Color(1, 0.82, 0.25, 1)
+	box_style.border_width_bottom = 3
+	box_style.border_width_top = 3
+	box_style.border_width_left = 3
+	box_style.border_width_right = 3
+	box_style.corner_radius_top_left = 8
+	box_style.corner_radius_top_right = 8
+	box_style.corner_radius_bottom_left = 8
+	box_style.corner_radius_bottom_right = 8
+	dice_box.add_theme_stylebox_override("panel", box_style)
+	vbox.add_child(dice_box)
+
+	# 骰子数字标签
+	var dice_label = Label.new()
+	dice_label.text = "?"
+	dice_label.add_theme_font_size_override("font_size", 48)
+	dice_label.add_theme_color_override("font_color", Color(1, 0.82, 0.25, 1))
+	dice_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dice_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dice_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dice_box.add_child(dice_label)
+
+	# 结果说明标签
+	var result_label = Label.new()
+	result_label.text = ""
+	result_label.add_theme_font_size_override("font_size", 22)
+	result_label.add_theme_color_override("font_color", Color(1, 0.82, 0.25, 1))
+	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(result_label)
+
+	# 播放滚动动画：25步，从快到慢（刺激感），总时长约2.5秒
+	var tween = create_tween()
+	var total_steps = 25
+	for i in range(total_steps):
+		var step_delay = 0.035 + (i + 1) * 0.005
+		tween.tween_interval(step_delay)
+		tween.tween_callback(func(): dice_label.text = str(randi() % 6 + 1))
+
+	# 显示最终点数和效果说明
+	var desc = _get_dice_desc(roll, card_special)
+	tween.tween_callback(func():
+		dice_label.text = str(roll)
+		result_label.text = "掷出 %d：%s" % [roll, desc]
+	)
+
+	# 停留1.2秒后消失
+	tween.tween_interval(1.2)
+	tween.tween_callback(overlay.queue_free)
+
+## 获取骰子点数对应的效果说明
+func _get_dice_desc(roll: int, card_special: String) -> String:
+	if card_special == "fate_wheel":
+		if roll % 2 == 1:
+			return "对随机敌人造成%d伤害" % (3 * roll)
+		else:
+			return "获得%d格挡" % (roll * 2)
+	match roll:
+		1: return "力量+1"
+		2: return "每回合+2防御"
+		3: return "2连击"
+		4: return "加4血，下次攻击+6"
+		5: return "中毒5/回合"
+		6: return "对全体造成6×2伤害+6防御"
+		_: return ""
 
 func _do_monster_turn() -> void:
 	GameManager.state["animating"] = true
@@ -794,6 +923,7 @@ func _on_victory() -> void:
 	visible = false
 
 func _on_campfire_entered() -> void:
+	print("[BattleScreen] _on_campfire_entered CALLED, setting visible=false")
 	visible = false
 
 func _on_campfire_choice_made(_choice_id: String) -> void:

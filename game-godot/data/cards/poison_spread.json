@@ -10,5 +10,5 @@
   "desc": "对所有敌人造成3/回合的中毒效果",
   "special": "poison_spread",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/poison_spread.png"
 }

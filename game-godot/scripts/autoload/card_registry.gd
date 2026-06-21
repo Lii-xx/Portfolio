@@ -36,6 +36,7 @@ func make_card(id: String) -> Dictionary:
 		"desc": def.get("desc", ""),
 		"special": def.get("special"),
 		"aoe": def.get("aoe", false),
+		"art": def.get("art", ""),
 	}
 
 var _card_id_counter: int = 0

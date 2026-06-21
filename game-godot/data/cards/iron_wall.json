@@ -10,5 +10,5 @@
   "desc": "对全体造成6伤害，获得6格挡",
   "special": null,
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/iron_wall.png"
 }

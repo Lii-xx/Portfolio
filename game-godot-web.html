@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡牌Roguelike (Godot版) - Game Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+    --bg:#0d0221;--surface:rgba(23,10,58,.9);--border:rgba(0,255,65,.25);
+    --text:#f0eaff;--text-sec:#9d8ec7;
+    --green:#00ff41;--pink:#ff2e88;--cyan:#00f0ff;--yellow:#ffd23f;
+    --radius:4px;
+    --shadow-hard:4px 4px 0 #000;
+    --glow-green:0 0 8px rgba(0,255,65,.6),0 0 16px rgba(0,255,65,.3);
+    --glow-pink:0 0 8px rgba(255,46,136,.6),0 0 16px rgba(255,46,136,.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Noto Sans SC','VT323',monospace;color:var(--text);background:var(--bg);}
+a{color:inherit;text-decoration:none;}
+
+/* CRT 扫描线 overlay */
+body::before{
+    content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0,rgba(0,0,0,.18) 1px,transparent 1px,transparent 3px);
+    mix-blend-mode:multiply;
+}
+
+.top-bar{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 24px;
+    background:rgba(13,2,33,.95);backdrop-filter:blur(8px);
+    border-bottom:2px solid var(--pink);
+    box-shadow:0 0 12px rgba(255,46,136,.3);
+}
+.back-link{
+    display:inline-flex;align-items:center;gap:8px;
+    color:var(--cyan);font-family:'VT323',monospace;font-size:18px;letter-spacing:1px;
+    transition:.18s steps(4);
+}
+.back-link:hover{color:var(--green);text-shadow:var(--glow-green);}
+.top-title{
+    font-family:'Press Start 2P',monospace;font-size:12px;color:var(--green);
+    text-shadow:var(--glow-green);letter-spacing:1px;
+}
+.download-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 16px;border-radius:var(--radius);
+    background:rgba(255,46,136,.15);border:2px solid var(--pink);color:var(--pink);
+    font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;
+    transition:.18s steps(4);box-shadow:var(--shadow-hard),0 0 12px rgba(255,46,136,.25);
+}
+.download-btn:hover{
+    background:var(--pink);color:#fff;
+    box-shadow:4px 4px 0 #000,0 0 18px rgba(255,46,136,.7);
+    transform:translate(-2px,-2px);
+}
+
+.game-frame-wrap{
+    position:fixed;top:52px;left:0;right:0;bottom:0;
+}
+.game-frame-wrap iframe{
+    width:100%;height:100%;border:none;display:block;background:var(--bg);
+}
+.loading{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;
+    background:var(--bg);z-index:1;transition:opacity .5s;
+}
+.loading.hidden{opacity:0;pointer-events:none;}
+.loading-text{
+    font-family:'Press Start 2P',monospace;font-size:14px;color:var(--green);
+    text-shadow:var(--glow-green);letter-spacing:2px;
+    animation:blink 1s steps(2) infinite;
+}
+.loading-sub{color:var(--text-sec);font-family:'VT323',monospace;font-size:18px;}
+@keyframes blink{50%{opacity:.4;}}
+
+@media(max-width:640px){
+    .top-title{display:none;}
+    .back-link{font-size:16px;}
+    .download-btn{font-size:11px;padding:6px 12px;}
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+    <a href="index.html" class="back-link">&#8592; 返回首页</a>
+    <div class="top-title">CARD ROGUELIKE &#183; GODOT</div>
+    <a href="download/CardRoguelike.exe" class="download-btn" download title="文件约101MB，无需安装Godot，双击即可运行。若浏览器提示'可能有害'或'已阻止'，请点击'保留/允许'继续下载">&#11015; 下载完整版exe（约101MB·独立运行）</a>
+</div>
+
+<div class="game-frame-wrap">
+    <div class="loading" id="loading">
+        <div class="loading-text">LOADING...</div>
+        <div class="loading-sub">正在加载游戏，首次加载约需10秒</div>
+    </div>
+    <iframe id="gameFrame" src="game-godot-web/index.html" onload="document.getElementById('loading').classList.add('hidden')"></iframe>
+</div>
+
+</body>
+</html>

@@ -24,6 +24,8 @@ body{font-family:'Noto Sans SC','VT323',monospace;background:var(--bg);color:var
 a{text-decoration:none;color:inherit;}
 button{font-family:inherit;}
 .container{width:min(1200px,92%);margin:auto;}
+.bg-image{position:fixed;inset:0;z-index:-3;background-color:#1a0533;background-image:url('Homepage background image.jpg');background-size:contain;background-position:center;background-repeat:no-repeat;filter:brightness(.45) saturate(.9) blur(8px);}
+.bg-veil{position:fixed;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at 50% 0%,rgba(13,2,33,.35) 0%,rgba(13,2,33,.5) 75%),linear-gradient(180deg,rgba(13,2,33,.45) 0%,rgba(13,2,33,.45) 100%);}
 body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.15) 0,rgba(0,0,0,.15) 1px,transparent 1px,transparent 3px);mix-blend-mode:multiply;}
 body::after{content:'';position:fixed;inset:0;z-index:9998;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.5) 100%);}
 .synth-grid{position:fixed;left:0;right:0;bottom:0;height:55vh;z-index:-2;background:linear-gradient(to bottom,transparent 0%,#0d0221 80%),repeating-linear-gradient(90deg,transparent 0,transparent 79px,var(--pink) 79px,var(--pink) 80px),repeating-linear-gradient(0deg,transparent 0,transparent 79px,var(--cyan) 79px,var(--cyan) 80px);transform:perspective(400px) rotateX(60deg);transform-origin:bottom;opacity:.4;animation:gridMove 3s linear infinite;}
@@ -69,8 +71,19 @@ footer::before{content:'';position:absolute;top:-2px;left:0;right:0;height:2px;b
 .footer-content p::before{content:'© ';color:var(--green);}
 @media(max-width:768px){.nav{display:none;}.mobile-toggle{display:flex;align-items:center;justify-content:center;}.article-title{font-size:26px;}.back-link{margin-top:96px;}.orb{display:none;}}
 </style>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?cde40b6c7ee09c46f32426d1910d123f";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
 </head>
 <body>
+<div class="bg-image"></div>
+<div class="bg-veil"></div>
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 <div class="synth-grid"></div>

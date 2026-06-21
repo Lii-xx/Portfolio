@@ -10,5 +10,5 @@
   "desc": "获得6点格挡",
   "special": null,
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/defend.png"
 }

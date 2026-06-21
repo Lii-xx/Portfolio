@@ -2,7 +2,7 @@
   "rewards": [
     {
       "id": "block",
-      "icon": "🛡️",
+      "icon": "盾",
       "name": "每回合+2格挡",
       "desc": "每回合开始获得2格挡",
       "type": "delayed_block_buff",
@@ -10,7 +10,7 @@
     },
     {
       "id": "str",
-      "icon": "💪",
+      "icon": "力",
       "name": "+1 永久力量",
       "desc": "所有攻击伤害+1",
       "type": "perm_strength",

@@ -36,6 +36,17 @@ func start_drag(card_id: int, card_data: Dictionary, monster_slots: Array) -> vo
 	# 取消之前的选择
 	GameManager.state["selection"] = null
 
+## 取消拖拽（不触发 drag_completed 信号）
+func cancel_drag() -> void:
+	if not _is_dragging:
+		return
+	_clear_hover()
+	_remove_ghost()
+	_is_dragging = false
+	_card_id = -1
+	_card_data = {}
+	_monster_slots = []
+
 func _input(event: InputEvent) -> void:
 	if not _is_dragging:
 		return
@@ -166,9 +177,9 @@ func _create_ghost() -> void:
 	var cost = _card_data.get("cost", 0)
 	var cost_prefix = ""
 	if _card_data.get("special") == "spin":
-		cost_prefix = "⚡X "
+		cost_prefix = "能X "
 	elif cost > 0:
-		cost_prefix = "⚡" + str(cost) + " "
+		cost_prefix = "能" + str(cost) + " "
 	type_label.text = cost_prefix + _card_data.get("type", "attack").to_upper()
 	vbox.add_child(type_label)
 

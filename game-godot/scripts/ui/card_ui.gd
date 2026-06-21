@@ -21,7 +21,6 @@ var type_label: Label
 var name_label: Label
 var desc_label: Label
 var uses_label: Label
-var aoe_badge: Label
 var art_rect: TextureRect
 
 var _initialized: bool = false
@@ -44,7 +43,7 @@ func _ready() -> void:
 		if art_rect == null:
 			art_rect = TextureRect.new()
 			art_rect.name = "CardArt"
-			art_rect.custom_minimum_size = Vector2(88, 56)
+			art_rect.custom_minimum_size = Vector2(88, 60)
 			art_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			art_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			art_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -71,7 +70,6 @@ func _resolve_labels() -> void:
 	uses_label = get_node_or_null("UsesLabel")
 	if uses_label == null:
 		uses_label = get_node_or_null("Layout/UsesLabel")
-	aoe_badge = get_node_or_null("AoeBadge")
 	# 兼容获取 CardArt（防止 _ready 先于外部 add_child 的情况）
 	art_rect = get_node_or_null("Layout/CardArt")
 
@@ -126,27 +124,22 @@ func _apply_visuals() -> void:
 		name_label.text = card_data.get("name", "???")
 	if desc_label:
 		desc_label.text = card_data.get("desc", "")
-	
+
 	var card_type = card_data.get("type", "attack")
 	if type_label:
-		# 显示能量消耗 + 类型标签（对齐HTML：⚡cost 类型）
+		# 显示能量消耗 + 类型标签（仅能力牌显示"能力"，其他类型不显示文字）
 		var cost = card_data.get("cost", 0)
 		var cost_prefix = ""
 		if card_data.get("special") == "spin":
-			cost_prefix = "⚡X "  # 旋斩消耗全部能量
+			cost_prefix = "能X"  # 旋斩消耗全部能量
 		elif cost > 0:
-			cost_prefix = "⚡" + str(cost) + " "
-		type_label.text = cost_prefix + _type_label(card_type)
-	if card_data.get("aoe", false):
-		if aoe_badge:
-			aoe_badge.visible = true
-			aoe_badge.text = "AOE"
-		if type_label:
-			type_label.text += " (全体)"
-	else:
-		if aoe_badge:
-			aoe_badge.visible = false
-	
+			cost_prefix = "能" + str(cost)
+		var type_str = _type_label(card_type)
+		if type_str == "":
+			type_label.text = cost_prefix
+		else:
+			type_label.text = cost_prefix + " " + type_str
+
 	if uses_label:
 		if card_data.get("special") != "blank" and card_data.get("max_uses", 0) > 0:
 			uses_label.text = str(card_data.get("uses_left", 0)) + "/" + str(card_data.get("max_uses", 0)) + "次"
@@ -221,12 +214,10 @@ func set_sacrifice_selected(selected: bool) -> void:
 	add_theme_stylebox_override("panel", style)
 
 func _type_label(type: String) -> String:
+	# 仅能力牌显示中文标签，其他类型不显示
 	match type:
-		"attack": return "ATK"
-		"utility": return "UTIL"
-		"power": return "PWR"
-		"special": return "SPC"
-		_: return type.to_upper()
+		"power": return "能力"
+		_: return ""
 
 func _type_color(type: String) -> Color:
 	match type:

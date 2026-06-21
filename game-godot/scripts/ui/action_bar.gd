@@ -8,6 +8,7 @@ signal skip_turn_pressed
 signal sacrifice_pressed
 signal blank_convert_pressed
 signal help_pressed
+signal restart_pressed
 
 var confirm_btn: Button
 var cancel_btn: Button
@@ -15,6 +16,7 @@ var skip_btn: Button
 var sacrifice_btn: Button
 var blank_btn: Button
 var help_btn: Button
+var restart_btn: Button
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 8)
@@ -27,13 +29,15 @@ func _init_buttons() -> void:
 	sacrifice_btn = _make_btn("献祭", "small")
 	blank_btn = _make_btn("兑换空白牌", "small")
 	help_btn = _make_btn("?", "small")
-	
+	restart_btn = _make_btn("重新开始本关", "small")
+
 	confirm_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); confirm_pressed.emit())
 	cancel_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); cancel_pressed.emit())
 	skip_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); skip_turn_pressed.emit())
 	sacrifice_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); sacrifice_pressed.emit())
 	blank_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); blank_convert_pressed.emit())
 	help_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); help_pressed.emit())
+	restart_btn.pressed.connect(func(): EventBus.sfx_requested.emit("ui_click"); restart_pressed.emit())
 
 func update_for_selection(has_selection: bool, phase: String = "battle") -> void:
 	for child in get_children():
@@ -54,21 +58,22 @@ func update_for_selection(has_selection: bool, phase: String = "battle") -> void
 		add_child(help_btn)
 	else:
 		add_child(skip_btn)
-		
+
 		var eligible = 0
 		for card in GameManager.state["player"]["deck"]:
 			if GameManager.is_sacrifice_eligible(card):
 				eligible += 1
 		sacrifice_btn.disabled = eligible < 2
 		add_child(sacrifice_btn)
-		
+
 		var blank_count = 0
 		for card in GameManager.state["player"]["deck"]:
 			if card.get("special") == "blank":
 				blank_count += 1
 		if blank_count >= 2:
 			add_child(blank_btn)
-		
+
+		add_child(restart_btn)
 		add_child(help_btn)
 
 func _make_btn(text: String, style: String) -> Button:

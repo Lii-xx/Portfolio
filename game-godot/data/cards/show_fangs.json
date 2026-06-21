@@ -10,5 +10,5 @@
   "desc": "每次造成伤害获得1点力量",
   "special": "show_fangs",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/show_fangs.png"
 }

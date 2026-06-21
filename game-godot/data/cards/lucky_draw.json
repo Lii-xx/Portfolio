@@ -10,5 +10,5 @@
   "desc": "骰子1-3概率降低50%，4-6概率增加50%",
   "special": "lucky_draw",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/lucky_draw.png"
 }

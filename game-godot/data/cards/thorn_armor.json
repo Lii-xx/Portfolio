@@ -10,5 +10,5 @@
   "desc": "获得4格挡，本关卡中受击反弹4伤害（可叠加）",
   "special": "thorn_armor",
   "sprite": null,
-  "art": ""
+  "art": "res://assets/cards/thorn_armor.png"
 }

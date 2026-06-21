@@ -15,3 +15,14 @@ godot-editor/
 
 # 个人网站-编辑区（HTML 测试文件夹，不纳入版本管理）
 个人网站-编辑区/
+
+# Godot 导出产物（不应出现在源码目录，导出到 game-godot-web/ 和 download/）
+game-godot/index.*
+game-godot/*.exe
+game-godot/export_presets.cfg
+game-godot/nul
+
+# Godot 编辑器临时/会话文件
+game-godot/会话交接.md
+game-godot/导出指引.md
+game-godot/素材对照表.md
