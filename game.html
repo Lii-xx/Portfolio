@@ -293,7 +293,7 @@ var _hmt = _hmt || [];
             <h3>延迟奖励</h3>战斗胜利后可选择代替卡牌：每回合开始+2格挡 或 +1永久力量
             <h3>能力牌</h3>每张牌每关使用一次，可抓多张叠加效果<br><strong>盾反</strong> — 回合结束对随机敌人造成格挡一半的伤害(2张=全额，3张=150%)<br><strong>露出獠牙</strong> — 每次造成伤害获得1点力量(多张叠加)<br><strong>吸欧气</strong> — 骰子1-3概率降低50%，4-6概率增加50%(多张叠加)
             <h3>X费牌</h3><strong>旋转</strong> — 消耗全部能量，对全体造成4×X伤害(X=消耗能量)
-            <h3>骰子牌</h3><strong>骰子</strong> — 1费，掷骰子1-6：<br>①力量+1 ②每回合+2防御 ③随机敌人2连击 ④加4血下次攻击+6 ⑤随机敌人中毒5/回合 ⑥对全体敌人造成6×2伤害+6防御
+            <h3>骰子牌</h3><strong>骰子</strong> — 1费，掷骰子1-6：<br>①力量+1 ②每回合+2防御（当回合也加） ③对随机敌人造成4点伤害2次（吃力量） ④随机敌人中毒6/回合 ⑤+6格挡+6荆棘（受击反伤6） ⑥对全体敌人造成6×2伤害+6防御
             <h3>特殊攻击</h3><strong>渴血</strong> — 2费，造成10伤害，力量≥5时回复实际造成的伤害
             <h3>新增技能牌</h3><strong>播毒</strong> — 1费，对所有敌人造成3/回合中毒，5次<br><strong>荆棘护甲</strong> — 1费，获得4格挡，本关受击反伤4（可叠加），5次<br><strong>命运轮盘</strong> — 1费，掷骰：奇数对随机敌人造成3×点数伤害；偶数获得点数×2格挡，5次（不受吸欧气影响）
         </div>
@@ -496,7 +496,7 @@ const Game = {
         if (card.damage > 0) {
             let dmg;
             if (card.special === 'spin') {
-                dmg = card.damage * spinEnergy + this.getStrength();
+                dmg = (card.damage + this.getStrength()) * spinEnergy;
             } else {
                 dmg = this.calcDamage(card);
             }
@@ -720,9 +720,12 @@ const Game = {
             s.player.tempStrength += 1;
             events.push({ type:'dice_effect', roll, desc:'力量+1' });
         } else if (roll === 2) {
-            // 本关卡每回合开始获得+2防御
+            // 本关卡每回合开始获得+2防御，当回合也立即获得+2格挡
             s.player.diceBlockBuff += 2;
-            events.push({ type:'dice_effect', roll, desc:'每回合+2防御' });
+            s.player.block += 2;
+            s.player.cardBlockThisTurn += 2;
+            events.push({ type:'block', value:2 });
+            events.push({ type:'dice_effect', roll, desc:'每回合+2防御（当回合+2格挡）' });
         } else if (roll === 3) {
             // 随机对一名敌人造成4*2次伤害（吃力量加成）
             if (alive.length > 0) {
@@ -738,20 +741,22 @@ const Game = {
                     if (d > 0 && s.player.powers.includes('show_fangs')) { const fc = s.player.powers.filter(p => p === 'show_fangs').length; s.player.tempStrength += fc; }
                 }
             }
-            events.push({ type:'dice_effect', roll, desc:'2连击' });
+            events.push({ type:'dice_effect', roll, desc:'对随机敌人4点×2连击' });
         } else if (roll === 4) {
-            // 加4血，下一次攻击+6伤害
-            s.player.hp = Math.min(s.player.maxHp, s.player.hp + 4);
-            s.player.nextAtkBonus += 6;
-            events.push({ type:'heal', value:4 });
-            events.push({ type:'dice_effect', roll, desc:'加4血，下次攻击+6' });
-        } else if (roll === 5) {
-            // 随机使一名敌人中毒：每回合扣5滴血（可叠加）
+            // 随机使一名敌人中毒：每回合扣6滴血（可叠加）
             if (alive.length > 0) {
                 const target = alive[Math.floor(Math.random() * alive.length)];
-                target.poison += 5;
-                events.push({ type:'dice_effect', roll, desc:'中毒5/回合' });
+                target.poison += 6;
+                events.push({ type:'dice_effect', roll, desc:'中毒6/回合' });
             }
+        } else if (roll === 5) {
+            // +6格挡 +6荆棘（本关受击反伤6，可叠加）
+            s.player.block += 6;
+            s.player.cardBlockThisTurn += 6;
+            s.player.thornBuff = (s.player.thornBuff || 0) + 6;
+            events.push({ type:'block', value:6 });
+            events.push({ type:'thorn_buff', value:6 });
+            events.push({ type:'dice_effect', roll, desc:'+6格挡，+6荆棘' });
         } else if (roll === 6) {
             // 对全体敌人造成6*2伤害（吃力量），同时获得10防御
             const dmg = 6 + this.getStrength();
@@ -1054,7 +1059,7 @@ const Drag = {
         const m = Game.state.monsters[idx];
 
         if (card.special === 'spin') {
-            const spinDmg = card.damage * Game.state.player.energy + Game.getStrength();
+            const spinDmg = (card.damage + Game.getStrength()) * Game.state.player.energy;
             preview.innerHTML = `<div class="dmg-preview aoe-preview">全体 -${spinDmg}</div>`;
         } else if (card.damage > 0) {
             const dmg = Game.calcDamage(card);
@@ -1381,7 +1386,7 @@ const UI = {
             box.textContent = num;
 
             if (step >= totalSteps) {
-                const descs = {1:'力量+1',2:'每回合+2防御',3:'2连击',4:'加4血，下次攻击+6',5:'中毒5/回合',6:'对全体造成6×2伤害+6防御'};
+                const descs = {1:'力量+1',2:'每回合+2防御（当回合+2格挡）',3:'对随机敌人4点×2连击',4:'中毒6/回合',5:'+6格挡，+6荆棘',6:'对全体造成6×2伤害+6防御'};
                 result.textContent = `掷出 ${finalRoll}：${descs[finalRoll]}`;
                 setTimeout(() => {
                     overlay.style.display = 'none';

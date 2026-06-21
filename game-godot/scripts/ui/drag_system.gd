@@ -111,7 +111,7 @@ func _show_preview(idx: int) -> void:
 	var card = _card_data
 	var dmg = 0
 	if card.get("special") == "spin":
-		dmg = card.get("damage", 0) * GameManager.state["player"].get("energy", 0) + GameManager.get_strength()
+		dmg = (card.get("damage", 0) + GameManager.get_strength()) * GameManager.state["player"].get("energy", 0)
 	elif card.get("damage", 0) > 0:
 		dmg = card.get("damage", 0) + GameManager.get_strength()
 	if dmg > 0:

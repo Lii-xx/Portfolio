@@ -20,6 +20,9 @@ var poison_label: HBoxContainer  # 毒图标+数值容器
 var _poison_text: Label
 var intent_label: HBoxContainer  # 意图图标+数值容器
 var _intent_text: Label
+var _intent_preview_btn: Button          # "?"意图循环预览按钮（对齐HTML intent-preview-btn）
+var _intent_cycle_holder: Control        # 意图循环浮窗定位容器
+var _intent_cycle_panel: PanelContainer  # 意图循环浮窗面板（对齐HTML intent-cycle）
 var boss_tag: Label
 var group_tag: Label
 
@@ -122,6 +125,8 @@ func _build_ui() -> void:
 	sprite_wrap.add_child(sprite)
 	# 怪物脚下加椭圆阴影（杀戮尖塔同款"站立感"）
 	_create_shadow()
+	# 意图循环预览按钮 + 浮窗（对齐HTML intent-preview-btn / intent-cycle）
+	_create_intent_preview()
 	
 	# 怪物名字
 	name_label = Label.new()
@@ -237,6 +242,126 @@ func _create_shadow() -> void:
 
 	sprite_wrap.add_child(_shadow_rect)
 
+## 创建意图循环预览按钮 + 浮窗（对齐HTML intent-preview-btn / intent-cycle）
+func _create_intent_preview() -> void:
+	# "?"圆形按钮（sprite_wrap右上角）
+	_intent_preview_btn = Button.new()
+	_intent_preview_btn.name = "IntentPreviewBtn"
+	_intent_preview_btn.text = "?"
+	_intent_preview_btn.custom_minimum_size = Vector2(22, 22)
+	_intent_preview_btn.add_theme_font_size_override("font_size", 9)
+	_intent_preview_btn.add_theme_color_override("font_color", Color(0, 0.94, 1, 1))
+	var ipb_style = StyleBoxFlat.new()
+	ipb_style.bg_color = Color(0.08, 0.02, 0.15, 0.9)
+	ipb_style.border_color = Color(0, 0.94, 1, 1)
+	ipb_style.border_width_left = 2
+	ipb_style.border_width_right = 2
+	ipb_style.border_width_top = 2
+	ipb_style.border_width_bottom = 2
+	ipb_style.corner_radius_top_left = 11
+	ipb_style.corner_radius_top_right = 11
+	ipb_style.corner_radius_bottom_left = 11
+	ipb_style.corner_radius_bottom_right = 11
+	ipb_style.content_margin_left = 0
+	ipb_style.content_margin_right = 0
+	ipb_style.content_margin_top = 0
+	ipb_style.content_margin_bottom = 0
+	_intent_preview_btn.add_theme_stylebox_override("normal", ipb_style)
+	_intent_preview_btn.add_theme_stylebox_override("hover", ipb_style)
+	_intent_preview_btn.add_theme_stylebox_override("pressed", ipb_style)
+	# anchors：sprite_wrap 右上角
+	_intent_preview_btn.anchor_left = 1.0
+	_intent_preview_btn.anchor_top = 0.0
+	_intent_preview_btn.anchor_right = 1.0
+	_intent_preview_btn.anchor_bottom = 0.0
+	_intent_preview_btn.offset_left = -26
+	_intent_preview_btn.offset_top = 2
+	_intent_preview_btn.offset_right = -2
+	_intent_preview_btn.offset_bottom = 24
+	_intent_preview_btn.z_index = 5
+	_intent_preview_btn.tooltip_text = "查看意图循环"
+	_intent_preview_btn.pressed.connect(_toggle_intent_preview)
+	sprite_wrap.add_child(_intent_preview_btn)
+
+	# 浮窗定位容器（Control，不参与布局，用于绝对定位）
+	_intent_cycle_holder = Control.new()
+	_intent_cycle_holder.name = "IntentCycleHolder"
+	_intent_cycle_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_intent_cycle_holder.z_index = 10
+	_intent_cycle_holder.visible = false
+	_intent_cycle_holder.anchor_left = 1.0
+	_intent_cycle_holder.anchor_top = 0.0
+	_intent_cycle_holder.anchor_right = 1.0
+	_intent_cycle_holder.anchor_bottom = 0.0
+	_intent_cycle_holder.offset_left = -135
+	_intent_cycle_holder.offset_top = 28
+	_intent_cycle_holder.offset_right = -2
+	_intent_cycle_holder.offset_bottom = 28
+	sprite_wrap.add_child(_intent_cycle_holder)
+
+	# 浮窗面板（深色背景 + 青色边框，对齐HTML .intent-cycle）
+	_intent_cycle_panel = PanelContainer.new()
+	_intent_cycle_panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_intent_cycle_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var icp_style = StyleBoxFlat.new()
+	icp_style.bg_color = Color(0.051, 0.008, 0.129, 0.95)
+	icp_style.border_color = Color(0, 0.94, 1, 1)
+	icp_style.border_width_left = 2
+	icp_style.border_width_right = 2
+	icp_style.border_width_top = 2
+	icp_style.border_width_bottom = 2
+	icp_style.corner_radius_top_left = 4
+	icp_style.corner_radius_top_right = 4
+	icp_style.corner_radius_bottom_left = 4
+	icp_style.corner_radius_bottom_right = 4
+	icp_style.content_margin_left = 8
+	icp_style.content_margin_right = 8
+	icp_style.content_margin_top = 6
+	icp_style.content_margin_bottom = 6
+	_intent_cycle_panel.add_theme_stylebox_override("panel", icp_style)
+	_intent_cycle_holder.add_child(_intent_cycle_panel)
+
+## 切换意图循环预览浮窗（对齐HTML toggleIntentPreview）
+func _toggle_intent_preview() -> void:
+	if not _intent_cycle_holder:
+		return
+	_intent_cycle_holder.visible = not _intent_cycle_holder.visible
+	if _intent_cycle_holder.visible:
+		_update_intent_cycle()
+
+## 更新意图循环浮窗内容：列出全部意图，当前意图"→"绿色高亮
+func _update_intent_cycle() -> void:
+	if not _intent_cycle_panel:
+		return
+	for child in _intent_cycle_panel.get_children():
+		child.queue_free()
+	var intents = monster_data.get("intents", [])
+	if intents.is_empty():
+		return
+	var current_idx = monster_data.get("intent_idx", 0) % intents.size()
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 2)
+	for i in range(intents.size()):
+		var intent = intents[i]
+		var is_current = i == current_idx
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		# 前缀标记：当前"→"，其他空格
+		var prefix = Label.new()
+		prefix.text = "→" if is_current else " "
+		prefix.add_theme_font_size_override("font_size", 12)
+		var color = Color(0, 1, 0.25, 1) if is_current else Color(0.6, 0.6, 0.7, 1)
+		prefix.add_theme_color_override("font_color", color)
+		row.add_child(prefix)
+		# 意图文本
+		var lbl = Label.new()
+		lbl.text = IntentSystem.get_intent_text(intent)
+		lbl.add_theme_font_size_override("font_size", 12)
+		lbl.add_theme_color_override("font_color", color)
+		row.add_child(lbl)
+		vbox.add_child(row)
+	_intent_cycle_panel.add_child(vbox)
+
 func setup(data: Dictionary, idx: int, is_group: bool) -> void:
 	monster_data = data
 	slot_idx = idx
@@ -285,6 +410,10 @@ func setup(data: Dictionary, idx: int, is_group: bool) -> void:
 		"debuff":
 			_intent_text.add_theme_color_override("font_color", Color(1, 0.82, 0.25, 1))
 	intent_label.add_child(_intent_text)
+	
+	# 意图循环浮窗：若处于展开状态则刷新内容（当前意图可能已推进）
+	if _intent_cycle_holder and _intent_cycle_holder.visible:
+		_update_intent_cycle()
 	
 	# Boss/群怪标签（群怪标签已移除，不再显示"群"字）
 	boss_tag.visible = data.get("is_boss", false)

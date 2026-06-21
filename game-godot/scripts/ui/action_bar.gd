@@ -52,6 +52,10 @@ func update_for_selection(has_selection: bool, phase: String = "battle") -> void
 		add_child(help_btn)
 		return
 
+	# battle phase：重置按钮状态（避免被 sacrifice phase 残留的 text/disabled 污染）
+	confirm_btn.text = "确认出牌"
+	confirm_btn.disabled = false
+
 	if has_selection:
 		add_child(confirm_btn)
 		add_child(cancel_btn)

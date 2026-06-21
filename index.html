@@ -188,9 +188,20 @@ a.mobile-demo-sub:hover{color:var(--cyan);background:var(--surface);padding-left
     letter-spacing:2px;
 }
 .hero h1 span{
-    display:block;color:var(--cyan);font-size:.4em;margin-top:20px;font-weight:400;
+    display:block;position:relative;color:var(--cyan);font-size:.4em;margin-top:20px;font-weight:400;
     text-shadow:var(--glow-pink);letter-spacing:3px;
 }
+/* hero 区域 Cardrouge game 下拉 */
+.hero-demo-trigger{
+    background:none;border:none;color:var(--cyan);font:inherit;font-size:inherit;
+    padding:0;cursor:pointer;letter-spacing:3px;
+    text-shadow:var(--glow-pink);transition:var(--transition);
+    display:inline-flex;align-items:center;gap:8px;
+}
+.hero-demo-trigger i{font-size:.7em;transition:var(--transition);}
+.hero h1 span.demo-dropdown:hover .hero-demo-trigger i{transform:rotate(180deg);}
+.hero h1 span.demo-dropdown:hover .demo-dropdown-menu{opacity:1;visibility:visible;transform:translateY(0);}
+.hero h1 span.demo-dropdown .demo-dropdown-menu{left:0;min-width:180px;}
 .hero-description{
     color:var(--text-secondary);max-width:560px;font-size:17px;margin-bottom:40px;
     border-left:3px solid var(--pink);padding-left:20px;
@@ -459,7 +470,7 @@ var _hmt = _hmt || [];
 <button class="demo-trigger" type="button">卡牌Demo <i class="fa-solid fa-chevron-down"></i></button>
 <div class="demo-dropdown-menu">
 <a href="game.html">HTML版</a>
-<a href="game-godot-web.html">Godot版（Web）</a>
+<a href="game-godot-web.html" title="因Godot安全需求，需等几日后个人域名审批完成后才能打开，下载则可以正常使用">Godot版（Web）</a>
 <a href="download/CardRoguelike.exe" download title="文件约101MB，无需安装Godot，双击即可运行。若浏览器提示'可能有害'或'已阻止'，请点击'保留/允许'继续下载">下载完整版exe（约101MB·独立运行）</a>
 </div>
 </div>
@@ -475,7 +486,7 @@ var _hmt = _hmt || [];
 <a href="#skills">技能工具</a>
 <span class="mobile-demo-title">卡牌Demo</span>
 <a href="game.html" class="mobile-demo-sub">HTML版</a>
-<a href="game-godot-web.html" class="mobile-demo-sub">Godot版（Web）</a>
+<a href="game-godot-web.html" class="mobile-demo-sub" title="因Godot安全需求，需等几日后个人域名审批完成后才能打开，下载则可以正常使用">Godot版（Web）</a>
 <a href="download/CardRoguelike.exe" class="mobile-demo-sub" download title="文件约101MB，无需安装Godot，双击即可运行。若浏览器拦截请点'保留/允许'">下载完整版exe（约101MB·独立运行）</a>
 </div>
 
@@ -485,13 +496,13 @@ var _hmt = _hmt || [];
 <div class="hero-content">
 <div class="section-icon hero-icon">&#9999;</div>
 <div class="hero-tag">GAME DESIGN PORTFOLIO</div>
-<h1>游戏策划<span>Game Designer</span></h1>
+<h1>游戏开发<span class="demo-dropdown"><button class="demo-trigger hero-demo-trigger" type="button">Cardrouge game <i class="fa-solid fa-chevron-down"></i></button><div class="demo-dropdown-menu"><a href="game.html">HTML版</a><a href="game-godot-web.html" title="因Godot安全需求，需等几日后个人域名审批完成后才能打开，下载则可以正常使用">Godot版（Web）</a><a href="download/CardRoguelike.exe" download title="文件约101MB，无需安装Godot，双击即可运行。若浏览器提示'可能有害'或'已阻止'，请点击'保留/允许'继续下载">下载完整版exe（约101MB·独立运行）</a></div></span></h1>
 </div>
 <div class="hero-card">
 <div class="profile-card">
 <div class="card-top">
 <div class="avatar">GD</div>
-<div><h3>梁皓</h3><p>3047376287@qq.com</p><a href="https://github.com/Lii-xx" target="_blank" class="github-btn"><i class="fa-brands fa-github"></i>GitHub主页</a></div>
+<div><h3>Lii</h3><p>3047376287@qq.com</p><a href="https://github.com/Lii-xx" target="_blank" class="github-btn"><i class="fa-brands fa-github"></i>GitHub主页</a></div>
 </div>
 <div class="card-divider"></div>
 <div class="profile-stats">
@@ -516,15 +527,15 @@ var _hmt = _hmt || [];
 <div class="carousel" id="gameCarousel">
 
 <div class="game-slide">
-<h3>云顶之弈</h3>
-<span class="game-stat-line">1000h+</span>
-<span class="game-achievement">艾欧尼亚 王者</span>
-</div>
-
-<div class="game-slide">
 <h3>杀戮尖塔 1/2</h3>
 <span class="game-stat-line">1000h+</span>
 <span class="game-achievement">多角色最高难度SL连胜30+</span>
+</div>
+
+<div class="game-slide">
+<h3>云顶之弈</h3>
+<span class="game-stat-line">500h+</span>
+<span class="game-achievement">艾欧尼亚 王者</span>
 </div>
 
 <div class="game-slide">
@@ -617,9 +628,9 @@ var _hmt = _hmt || [];
 </a>
 
 <a class="decon-card hidden" href="decon-gacha.html">
-<span class="decon-tag">Monetization</span>
-<h3>金铲铲，原神等游戏的抽奖机制分析</h3>
-<p>金铲铲与原神的抽奖概率、保底与付费循环拆解。</p>
+<span class="decon-tag">System</span>
+<h3>《艾希》为什么不如《武士零》</h3>
+<p>游戏有时设定无需太复杂。</p>
 </a>
 
 </div>
@@ -650,19 +661,6 @@ var _hmt = _hmt || [];
 <h3>Agent</h3>
 <div class="badge-list">
 <span class="badge">Codex</span><span class="badge">Cursor</span><span class="badge">Claude</span><span class="badge">Zcode</span><span class="badge">Trae</span><span class="badge">CodeBuddy</span><span class="badge">QoderWork</span>
-</div>
-</div>
-<div class="skill-group hidden">
-<h3>游戏开发</h3>
-<div class="badge-list">
-<div class="badge demo-dropdown" style="border-color:var(--pink);color:var(--pink);text-shadow:0 0 6px rgba(255,46,136,.4);">
-<button class="demo-trigger" type="button">卡牌Demo <i class="fa-solid fa-chevron-down"></i></button>
-<div class="demo-dropdown-menu">
-<a href="game.html">HTML版</a>
-<a href="game-godot-web.html">Godot版（Web）</a>
-<a href="download/CardRoguelike.exe" download title="文件约101MB，无需安装Godot，双击即可运行。若浏览器提示'可能有害'或'已阻止'，请点击'保留/允许'继续下载">下载完整版exe（约101MB·独立运行）</a>
-</div>
-</div>
 </div>
 </div>
 </div>

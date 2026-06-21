@@ -1,6 +1,6 @@
 extends RefCounted
 ## 骰子效果: 掷骰子1-6，触发对应随机效果（对齐HTML）
-## ①力量+1 ②每回合+2防御 ③随机敌人2连击 ④加4血下次攻击+6 ⑤随机敌人中毒5/回合 ⑥对全体敌人造成6×2伤害+6防御
+## ①力量+1 ②每回合+2防御（当回合也加） ③对随机敌人造成4点伤害2次 ④随机敌人中毒6/回合 ⑤+6格挡+6荆棘 ⑥对全体敌人造成6×2伤害+6防御
 ## lucky_draw 能力牌影响概率：1-3权重×0.5^n，4-6权重×1.5^n（n=luckyCount，多张叠加）
 
 func execute(_source: Dictionary, _target_idx: int, game_state: Dictionary) -> Dictionary:
@@ -16,9 +16,12 @@ func execute(_source: Dictionary, _target_idx: int, game_state: Dictionary) -> D
 		1: # 力量+1
 			player["temp_strength"] = player.get("temp_strength", 0) + 1
 			events.append({"type": "buff", "buff_type": "strength", "value": 1})
-		2: # 每回合+2防御（骰子专属，每场战斗重置，对齐HTML diceBlockBuff）
+		2: # 每回合+2防御（骰子专属，每场战斗重置，对齐HTML diceBlockBuff），当回合也立即获得+2格挡
 			player["dice_block_buff"] = player.get("dice_block_buff", 0) + 2
+			player["block"] = player.get("block", 0) + 2
+			player["card_block_this_turn"] = player.get("card_block_this_turn", 0) + 2
 			events.append({"type": "buff", "buff_type": "delayed_block", "value": 2})
+			events.append({"type": "block", "value": 2})
 		3: # 随机敌人2连击
 			var alive = _alive_monsters_with_idx(game_state)
 			if not alive.is_empty():
@@ -37,16 +40,18 @@ func execute(_source: Dictionary, _target_idx: int, game_state: Dictionary) -> D
 						events.append({"type": "kill", "idx": pick.idx})
 					# 触发獠牙（对齐HTML）
 					GameManager._apply_fangs_buff(actual, events)
-		4: # 加4血下次攻击+6
-			player["hp"] = mini(player["max_hp"], player["hp"] + 4)
-			player["next_atk_bonus"] = player.get("next_atk_bonus", 0) + 6
-			events.append({"type": "heal", "value": 4})
-		5: # 随机敌人中毒5/回合（对齐HTML：中毒不衰减）
+		4: # 随机敌人中毒6/回合（对齐HTML：中毒不衰减）
 			var alive2 = _alive_monsters_with_idx(game_state)
 			if not alive2.is_empty():
 				var pick2 = alive2[randi() % alive2.size()]
-				pick2.monster["poison"] = pick2.monster.get("poison", 0) + 5
-				events.append({"type": "poison", "idx": pick2.idx, "value": 5})
+				pick2.monster["poison"] = pick2.monster.get("poison", 0) + 6
+				events.append({"type": "poison", "idx": pick2.idx, "value": 6})
+		5: # +6格挡 +6荆棘（本关受击反伤6，可叠加）
+			player["block"] = player.get("block", 0) + 6
+			player["card_block_this_turn"] = player.get("card_block_this_turn", 0) + 6
+			player["thorn_buff"] = player.get("thorn_buff", 0) + 6
+			events.append({"type": "block", "value": 6})
+			events.append({"type": "buff", "buff_type": "thorn", "value": 6})
 		6: # 对全体敌人造成6×2伤害+6防御
 			for i in range(game_state["monsters"].size()):
 				var m = game_state["monsters"][i]

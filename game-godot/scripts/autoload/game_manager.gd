@@ -161,8 +161,8 @@ func play_card(card_id: int, target_idx: int) -> Array:
 	if card.get("damage", 0) > 0:
 		var dmg: int
 		if card.get("special") == "spin":
-			# 旋斩：伤害 = damage × 消耗能量 + 力量
-			dmg = card["damage"] * spin_energy + get_strength()
+			# 旋斩：伤害 = (damage + 力量) × 消耗能量（每段伤害都吃力量加成）
+			dmg = (card["damage"] + get_strength()) * spin_energy
 		else:
 			dmg = DamageCalculator.calc_card_damage(card, get_strength())
 		# 下次攻击加成（骰子效果等）
